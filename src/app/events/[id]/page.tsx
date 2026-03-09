@@ -1,5 +1,5 @@
 import { ViewEvent } from "@/components/organiser/view-event";
-import { Navbar } from "@/app/components/Navbar";
+import { Navbar } from "@/components/common/Navbar";
 import { mockEvent, mockRegisteredUsers } from "@/lib/mock-data";
 
 export default function EventPage() {
