@@ -1,3 +1,4 @@
+// components/EventFilterBanner.tsx
 "use client";
 
 import {
@@ -17,16 +18,17 @@ export function EventFilterBanner({ value, onChange }: EventFilterBannerProps) {
   return (
     <div className="w-full flex justify-center mb-6">
       <div className="bg-gray-100 rounded-md shadow p-4 w-full max-w-2xl flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Events</h2>
+        <h2 className="text-lg font-semibold">Filter Events</h2>
         <Select value={value} onValueChange={onChange}>
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-45">
             <SelectValue placeholder="Select status" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="ALL">All</SelectItem>
-            <SelectItem value="PENDING">Pending</SelectItem>
-            <SelectItem value="APPROVED">Approved</SelectItem>
-            <SelectItem value="REJECTED">Rejected</SelectItem>
+            <SelectItem value="UPCOMING">Upcoming</SelectItem>
+            <SelectItem value="ONGOING">Ongoing</SelectItem>
+            <SelectItem value="COMPLETED">Completed</SelectItem>
+            <SelectItem value="CANCELLED">Cancelled</SelectItem>
           </SelectContent>
         </Select>
       </div>
