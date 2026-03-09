@@ -9,9 +9,9 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
 
 interface EventApprovalCardProps {
+  eventId: string;
   title: string;
   description: string;
   startDatetime: string;
@@ -20,9 +20,15 @@ interface EventApprovalCardProps {
   amount: number;
   creator: string;
   approvalStatus: "PENDING" | "APPROVED" | "REJECTED";
+  loading?: boolean;
+  onDecision: (
+    id: string,
+    status: "APPROVED" | "REJECTED",
+  ) => Promise<void> | void;
 }
 
 export function EventApprovalCard({
+  eventId,
   title,
   description,
   startDatetime,
@@ -30,12 +36,10 @@ export function EventApprovalCard({
   seats,
   amount,
   creator,
-  approvalStatus: initialStatus,
+  approvalStatus,
+  loading = false,
+  onDecision,
 }: EventApprovalCardProps) {
-  const [status, setStatus] = useState<"PENDING" | "APPROVED" | "REJECTED">(
-    initialStatus,
-  );
-
   return (
     <Card className="w-full">
       <CardHeader>
@@ -61,23 +65,31 @@ export function EventApprovalCard({
             <strong>Status:</strong>{" "}
             <span
               className={
-                status === "APPROVED"
+                approvalStatus === "APPROVED"
                   ? "text-green-600 font-semibold"
-                  : status === "REJECTED"
+                  : approvalStatus === "REJECTED"
                     ? "text-red-600 font-semibold"
                     : "text-yellow-600 font-semibold"
               }
             >
-              {status}
+              {approvalStatus}
             </span>
           </p>
         </div>
       </CardContent>
       <CardFooter className="flex gap-2">
-        <Button variant="default" onClick={() => setStatus("APPROVED")}>
+        <Button
+          variant="default"
+          onClick={() => onDecision(eventId, "APPROVED")}
+          disabled={loading}
+        >
           Approve
         </Button>
-        <Button variant="destructive" onClick={() => setStatus("REJECTED")}>
+        <Button
+          variant="destructive"
+          onClick={() => onDecision(eventId, "REJECTED")}
+          disabled={loading}
+        >
           Reject
         </Button>
       </CardFooter>

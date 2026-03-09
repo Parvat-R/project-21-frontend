@@ -1,5 +1,4 @@
 import { ViewEvent } from "@/components/organiser/view-event";
-import { RoleSidebar } from "@/components/common/RoleSidebar";
 import { Event } from "@/lib/types";
 
 function toImageSrc(imageData: unknown): string {
@@ -32,21 +31,14 @@ type EventApiResponse = Omit<Event, "imageData" | "amount"> & {
   amount: number | string;
 };
 
-export default async function EventPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function OrganiserEventPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ?? "http://localhost:3000";
 
   const eventRes = await fetch(`${apiBase}/api/event/${id}`, { cache: "no-store" });
 
   if (!eventRes.ok) {
-    return (
-      <div className="flex min-h-screen bg-background">
-        <RoleSidebar role="user" />
-        <main className="flex-1 p-6">
-          <p className="text-sm text-destructive">Unable to load this event.</p>
-        </main>
-      </div>
-    );
+    return <p className="text-sm text-destructive">Unable to load this event.</p>;
   }
 
   const eventRaw: EventApiResponse = await eventRes.json();
@@ -57,12 +49,5 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
     imageData: toImageSrc(eventRaw.imageData),
   };
 
-  return (
-    <div className="flex min-h-screen bg-background">
-      <RoleSidebar role="user" />
-      <main className="flex-1 p-6">
-        <ViewEvent event={event} eventId={id} backHref="/user/events" />
-      </main>
-    </div>
-  );
+  return <ViewEvent event={event} eventId={id} backHref="/organiser/events/internal" />;
 }
