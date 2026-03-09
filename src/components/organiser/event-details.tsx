@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import { Event } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,7 +12,6 @@ import {
   Eye,
   ShieldCheck,
   Hash,
-  UserCircle,
   Link as LinkIcon,
 } from "lucide-react";
 
@@ -59,10 +59,11 @@ export function EventDetails({ event }: EventDetailsProps) {
         {/* Event image */}
         <div className="relative mb-4 h-56 w-full overflow-hidden rounded-lg bg-muted">
           {event.imageData ? (
-            <img
+            <Image
               src={event.imageData}
               alt={event.title}
-              className="h-full w-full object-cover"
+              fill
+              className="object-cover"
             />
           ) : (
             <div className="flex h-full items-center justify-center text-muted-foreground">
