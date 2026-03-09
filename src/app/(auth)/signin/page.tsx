@@ -5,6 +5,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { signIn } from "@/services/operations/Auth";
+import { sign } from "crypto";
 
 export default function SignInPage() {
   const [email, setEmail] = useState("");
@@ -12,11 +14,9 @@ export default function SignInPage() {
   const router = useRouter();
 
   const handleSignin = () => {
-    // Dummy signin logic
     console.log("Signin:", { email, password });
-    alert(`Signed in as ${email}`);
+    signIn({ email, password })();
 
-    // Redirect back to previous page
     router.back();
   };
 
