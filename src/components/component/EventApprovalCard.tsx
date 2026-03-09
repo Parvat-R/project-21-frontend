@@ -9,6 +9,7 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useState } from "react";
 
 interface EventApprovalCardProps {
   title: string;
@@ -29,8 +30,12 @@ export function EventApprovalCard({
   seats,
   amount,
   creator,
-  approvalStatus,
+  approvalStatus: initialStatus,
 }: EventApprovalCardProps) {
+  const [status, setStatus] = useState<"PENDING" | "APPROVED" | "REJECTED">(
+    initialStatus,
+  );
+
   return (
     <Card className="w-full">
       <CardHeader>
@@ -53,13 +58,28 @@ export function EventApprovalCard({
             <strong>Amount:</strong> ₹{amount}
           </p>
           <p>
-            <strong>Status:</strong> {approvalStatus}
+            <strong>Status:</strong>{" "}
+            <span
+              className={
+                status === "APPROVED"
+                  ? "text-green-600 font-semibold"
+                  : status === "REJECTED"
+                    ? "text-red-600 font-semibold"
+                    : "text-yellow-600 font-semibold"
+              }
+            >
+              {status}
+            </span>
           </p>
         </div>
       </CardContent>
       <CardFooter className="flex gap-2">
-        <Button variant="default">Approve</Button>
-        <Button variant="destructive">Reject</Button>
+        <Button variant="default" onClick={() => setStatus("APPROVED")}>
+          Approve
+        </Button>
+        <Button variant="destructive" onClick={() => setStatus("REJECTED")}>
+          Reject
+        </Button>
       </CardFooter>
     </Card>
   );
