@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { getUser } from "@/lib/auth";
 
 interface ViewEventProps {
   event: Event;
@@ -16,6 +17,8 @@ interface ViewEventProps {
   backHref?: string;
   editHref?: string;
   showRegister?: boolean;
+  /** The creatorId of the event — used to decide Edit vs Register */
+  creatorId?: string;
 }
 
 type RegistrationApiResponse = {
@@ -27,10 +30,12 @@ type RegistrationApiResponse = {
   attendance?: boolean;
 };
 
-// Temporary until real auth session is available
-const TEMP_CURRENT_USER_ID = "cmm7d6ttv0007uoeihdxt0g26";
+export function ViewEvent({ event, eventId, registeredUsers = [], backHref = "/", editHref, showRegister, creatorId }: ViewEventProps) {
+  const currentUser = getUser();
+  const isCreator = creatorId ? currentUser?.userId === creatorId : false;
+  const resolvedEditHref = isCreator ? `/organiser/events/${eventId}/edit` : editHref;
+  const resolvedShowRegister = showRegister !== undefined ? showRegister : !isCreator;
 
-export function ViewEvent({ event, eventId, registeredUsers = [], backHref = "/", editHref, showRegister = false }: ViewEventProps) {
   const [activeTab, setActiveTab] = useState("details");
   const [users, setUsers] = useState<RegisteredUser[]>(registeredUsers);
   const [isUsersLoading, setIsUsersLoading] = useState(false);
@@ -86,13 +91,13 @@ export function ViewEvent({ event, eventId, registeredUsers = [], backHref = "/"
         </Link>
 
         <div className="flex items-center gap-2">
-          {editHref && (
-            <Link href={editHref}>
+          {resolvedEditHref && (
+            <Link href={resolvedEditHref}>
               <Button size="sm">Edit Event</Button>
             </Link>
           )}
 
-          {showRegister && (
+          {resolvedShowRegister && (
             <Button
               size="sm"
               disabled={registering || !!registerMsg}
@@ -108,7 +113,7 @@ export function ViewEvent({ event, eventId, registeredUsers = [], backHref = "/"
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
-                      userId: TEMP_CURRENT_USER_ID,
+                      userId: getUser()?.userId ?? "",
                       eventId,
                     }),
                   });

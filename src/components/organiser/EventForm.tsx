@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { getUser } from "@/lib/auth";
 import {
   Select,
   SelectContent,
@@ -40,7 +41,7 @@ const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
 const STEPS = ["basics", "details", "review"] as const;
 type Step = (typeof STEPS)[number];
 
-const STORAGE_KEY = "organiser_user_id";
+
 
 export function EventForm() {
   const [title, setTitle] = useState("");
@@ -60,11 +61,8 @@ export function EventForm() {
   const [imageName, setImageName] = useState("");
   const [activeStep, setActiveStep] = useState<Step>("basics");
 
-  // Read creator ID from localStorage (set on dashboard)
-  const creatorId =
-    typeof window !== "undefined"
-      ? localStorage.getItem(STORAGE_KEY) ?? ""
-      : "";
+  // Read creator ID from the signed-in user's JWT session
+  const creatorId = getUser()?.userId ?? "";
 
   const canSubmit = useMemo(() => {
     return (

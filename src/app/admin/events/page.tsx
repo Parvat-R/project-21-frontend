@@ -30,7 +30,7 @@ export default function AdminEventsPage() {
     const run = async () => {
       try {
         const apiBase =
-          process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ??
+          process.env.NEXT_PUBLIC_BASE_URL ||
           "http://localhost:3000";
         const response = await fetch(`${apiBase}/api/event?take=100`, {
           cache: "no-store",
@@ -52,7 +52,9 @@ export default function AdminEventsPage() {
 
   const filteredEvents = useMemo(
     () =>
-      filter === "ALL" ? events : events.filter((e) => e.approvalStatus === filter),
+      filter === "ALL"
+        ? events
+        : events.filter((e) => e.approvalStatus === filter),
     [filter, events]
   );
 

@@ -1,10 +1,14 @@
+import { Navbar } from "@/components/common/Navbar";
+
 export default function Home() {
   return (
-    <main className="p-6">
-      <h1 className="text-2xl font-semibold">EMS</h1>
-      <p className="mt-2 text-sm text-muted-foreground">
-        Use role routes like `/organiser/*` or `/user/*` to access sidebar navigation.
-      </p>
-    </main>
+    <div className="flex flex-col min-h-screen">
+      <Navbar />
+      <main className="flex min-h-screen items-center justify-center bg-background">
+        <h1 className="text-4xl font-bold text-primary">
+          Welcome to Eventify!
+        </h1>
+      </main>
+    </div>
   );
 }

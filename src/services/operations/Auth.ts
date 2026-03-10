@@ -1,5 +1,6 @@
 import { apiConnector } from "../apiConnector";
 import { endpoints } from "../api";
+import { saveSession } from "@/lib/auth";
 
 const { SIGNUP_API, SIGNIN_API } = endpoints;
 
@@ -7,6 +8,7 @@ interface SignUpData {
   user: string;
   email: string;
   password: string;
+  role?: "USER" | "ORGANISER";
 }
 
 interface SignInData {
@@ -14,61 +16,38 @@ interface SignInData {
   password: string;
 }
 
-export function signUp({ user, email, password }: SignUpData) {
-  console.log("SIGNUP DATA............", { user, email, password });
-  console.log("Signup API URL............", SIGNUP_API);
-
+export function signUp({ user, email, password, role = "USER" }: SignUpData) {
   return async () => {
-    try {
-      const response = await apiConnector(
-        "POST",
-        SIGNUP_API,
-        {
-          name: user,
-          email,
-          password,
-        },
-        {
-          "Content-Type": "application/json",
-        },
-        null,
-        true,
-      );
-
-      console.log("SIGNUP API RESPONSE............", response);
-      return response;
-    } catch (error) {
-      console.log("SIGNUP API ERROR............", error);
-      throw error;
-    }
+    const response = await apiConnector(
+      "POST",
+      SIGNUP_API,
+      { name: user, email, password, role },
+      { "Content-Type": "application/json" },
+      null,
+      true,
+    );
+    return response;
   };
 }
 
 export function signIn({ email, password }: SignInData) {
-  console.log("SIGNIN DATA............", { email, password });
-  console.log("Signin API URL............", SIGNIN_API);
-
   return async () => {
-    try {
-      const response = await apiConnector(
-        "POST",
-        SIGNIN_API,
-        {
-          email,
-          password,
-        },
-        {
-          "Content-Type": "application/json",
-        },
-        null,
-        true,
-      );
+    const response = await apiConnector(
+      "POST",
+      SIGNIN_API,
+      { email, password },
+      { "Content-Type": "application/json" },
+      null,
+      true,
+    );
 
-      console.log("SIGNIN API RESPONSE............", response);
-      return response;
-    } catch (error) {
-      console.log("SIGNIN API ERROR............", error);
-      throw error;
+    const data = response.data;
+
+    if (data?.data?.token) {
+      const user = saveSession(data.data.token);
+      return { success: true, user };
     }
+
+    return { success: false, user: null };
   };
 }
