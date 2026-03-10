@@ -12,6 +12,8 @@ export const endpoints = {
   SIGNUP_API: BASE_URL + "/api/auth/signup",
 };
 
+console.log(endpoints.SIGNIN_API, endpoints.SIGNUP_API)
+
 // EVENT ENDPOINTS
 export const eventEndpoints = {
   GET_ALL_EVENTS: BASE_URL + "/api/event",
