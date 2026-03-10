@@ -2,8 +2,8 @@
 "use client";
 
 import { useState } from "react";
-import { EventCard } from "@/components/component/EventCard";
-import { EventFilterBanner } from "@/components/component/EventFilterBanner";
+import { EventCard } from "@/components/admin/EventCard";
+import { EventFilterBanner } from "@/components/admin/EventFilterBanner";
 import img from "@/assests/event.png";
 import { StaticImageData } from "next/dist/shared/lib/image-external";
 

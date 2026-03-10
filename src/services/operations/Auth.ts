@@ -1,5 +1,6 @@
 import { apiConnector } from "../apiConnector";
 import { endpoints } from "../api";
+import jwt from "jsonwebtoken";
 
 const { SIGNUP_API, SIGNIN_API } = endpoints;
 
@@ -64,8 +65,25 @@ export function signIn({ email, password }: SignInData) {
         true,
       );
 
-      console.log("SIGNIN API RESPONSE............", response);
-      return response;
+      const data = response.data;
+      console.log("SIGNIN API RESPONSE............", data);
+
+      if (data?.data?.token) {
+        // Store token in localStorage
+        console.log(
+          "Storing token in localStorage............",
+          data.data.token,
+        );
+        const decoded = jwt.verify(
+          data.data.token,
+          process.env.NEXT_PUBLIC_JWT_SECRET!,
+        );
+        console.log(decoded);
+        console.log("tokenData", JSON.stringify(decoded));
+        localStorage.setItem("token", data.data.token);
+      }
+
+      return data;
     } catch (error) {
       console.log("SIGNIN API ERROR............", error);
       throw error;
