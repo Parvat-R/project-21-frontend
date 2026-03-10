@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { signIn } from "@/services/operations/Auth";
-import { sign } from "crypto";
 
 export default function SignInPage() {
   const [email, setEmail] = useState("");
