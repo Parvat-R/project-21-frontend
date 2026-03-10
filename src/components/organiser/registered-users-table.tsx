@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { RegisteredUser } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -21,13 +21,50 @@ interface RegisteredUsersTableProps {
 
 export function RegisteredUsersTable({ users: initialUsers }: RegisteredUsersTableProps) {
   const [users, setUsers] = useState<RegisteredUser[]>(initialUsers);
+  const [updatingIds, setUpdatingIds] = useState<Record<string, boolean>>({});
+  const [error, setError] = useState("");
 
-  function handleToggleApproval(userId: string) {
-    setUsers((prev) =>
-      prev.map((u) =>
-        u.id === userId ? { ...u, approved: !u.approved } : u
-      )
-    );
+  useEffect(() => {
+    setUsers(initialUsers);
+  }, [initialUsers]);
+
+  async function handleToggleAttendance(userId: string, nextAttendance: boolean) {
+    const target = users.find((user) => user.id === userId);
+    if (!target?.registrationId) {
+      setError("Registration ID missing for this user.");
+      return;
+    }
+
+    const registrationId = target.registrationId;
+
+    try {
+      setError("");
+      setUpdatingIds((prev) => ({ ...prev, [registrationId]: true }));
+
+      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ?? "http://localhost:3000";
+      const response = await fetch(`${apiBase}/api/register/${registrationId}/attendance`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ attendance: nextAttendance }),
+      });
+
+      if (!response.ok) {
+        setError("Failed to update attendance.");
+        return;
+      }
+
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.id === userId ? { ...u, approved: nextAttendance } : u,
+        ),
+      );
+    } catch {
+      setError("Failed to update attendance.");
+    } finally {
+      setUpdatingIds((prev) => ({ ...prev, [registrationId]: false }));
+    }
   }
 
   return (
@@ -41,6 +78,7 @@ export function RegisteredUsersTable({ users: initialUsers }: RegisteredUsersTab
         </div>
       </CardHeader>
       <CardContent>
+        {error ? <p className="mb-3 text-sm text-destructive">{error}</p> : null}
         {users.length === 0 ? (
           <p className="py-6 text-center text-muted-foreground">
             No users registered for this event yet.
@@ -54,7 +92,7 @@ export function RegisteredUsersTable({ users: initialUsers }: RegisteredUsersTab
                   <TableHead>User ID</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead className="text-center">Status</TableHead>
-                  <TableHead className="text-center">Approval</TableHead>
+                  <TableHead className="text-center">Attendance</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -69,13 +107,14 @@ export function RegisteredUsersTable({ users: initialUsers }: RegisteredUsersTab
                       <Badge
                         variant={user.approved ? "default" : "secondary"}
                       >
-                        {user.approved ? "Approved" : "Pending"}
+                        {user.approved ? "Present" : "Absent"}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-center">
                       <Switch
                         checked={user.approved}
-                        onCheckedChange={() => handleToggleApproval(user.id)}
+                        disabled={Boolean(user.registrationId && updatingIds[user.registrationId]) || !user.registrationId}
+                        onCheckedChange={(checked) => handleToggleAttendance(user.id, checked)}
                       />
                     </TableCell>
                   </TableRow>

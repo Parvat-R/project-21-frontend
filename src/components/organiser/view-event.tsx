@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Event, RegisteredUser } from "@/lib/types";
 import { EventDetails } from "./event-details";
 import { RegisteredUsersTable } from "./registered-users-table";
@@ -10,25 +11,76 @@ import Link from "next/link";
 
 interface ViewEventProps {
   event: Event;
-  registeredUsers: RegisteredUser[];
+  eventId?: string;
+  registeredUsers?: RegisteredUser[];
+  backHref?: string;
 }
 
-export function ViewEvent({ event, registeredUsers }: ViewEventProps) {
+type RegistrationApiResponse = {
+  id: string;
+  user?: {
+    id: string;
+    email: string;
+  };
+  attendance?: boolean;
+};
+
+export function ViewEvent({ event, eventId, registeredUsers = [], backHref = "/" }: ViewEventProps) {
+  const [activeTab, setActiveTab] = useState("details");
+  const [users, setUsers] = useState<RegisteredUser[]>(registeredUsers);
+  const [isUsersLoading, setIsUsersLoading] = useState(false);
+  const [usersLoaded, setUsersLoaded] = useState(registeredUsers.length > 0);
+
+  useEffect(() => {
+    if (activeTab !== "users" || usersLoaded || !eventId) return;
+
+    const loadUsers = async () => {
+      try {
+        setIsUsersLoading(true);
+        const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ?? "http://localhost:3000";
+        const response = await fetch(`${apiBase}/api/register/event/${eventId}`, { cache: "no-store" });
+
+        if (!response.ok) {
+          setUsers([]);
+          setUsersLoaded(true);
+          return;
+        }
+
+        const data: RegistrationApiResponse[] = await response.json();
+        const mappedUsers: RegisteredUser[] = (Array.isArray(data) ? data : [])
+          .filter((item) => item.id && item.user?.id && item.user?.email)
+          .map((item) => ({
+            id: item.user!.id,
+            email: item.user!.email,
+            approved: Boolean(item.attendance),
+            registrationId: item.id,
+          }));
+
+        setUsers(mappedUsers);
+        setUsersLoaded(true);
+      } finally {
+        setIsUsersLoading(false);
+      }
+    };
+
+    loadUsers();
+  }, [activeTab, usersLoaded, eventId]);
+
   return (
     <div className="mx-auto max-w-4xl space-y-6 px-4 py-8">
       {/* Back button */}
-      <Link href="/">
+      <Link href={backHref}>
         <Button variant="ghost" size="sm" className="gap-1">
           <ArrowLeft className="h-4 w-4" />
           Back
         </Button>
       </Link>
 
-      <Tabs defaultValue="details">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="details">Event Details</TabsTrigger>
           <TabsTrigger value="users">
-            Registered Users ({registeredUsers.length})
+            Registered Users ({users.length})
           </TabsTrigger>
         </TabsList>
 
@@ -37,7 +89,11 @@ export function ViewEvent({ event, registeredUsers }: ViewEventProps) {
         </TabsContent>
 
         <TabsContent value="users" className="mt-4">
-          <RegisteredUsersTable users={registeredUsers} />
+          {isUsersLoading ? (
+            <p className="text-sm text-muted-foreground">Loading registered users...</p>
+          ) : (
+            <RegisteredUsersTable users={users} />
+          )}
         </TabsContent>
       </Tabs>
     </div>

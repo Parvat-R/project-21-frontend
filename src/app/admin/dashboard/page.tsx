@@ -1,63 +1,115 @@
 // app/dashboard/page.tsx
 "use client";
 
-import { useState } from "react";
-import { EventStatCard } from "@/components/component/EventStatCard";
-import { EventApprovalCard } from "@/components/component/EventApprovalCard";
-import { EventFilterBanner } from "@/components/component/EventFilterBanner";
+import { useEffect, useMemo, useState } from "react";
+import { EventStatCard } from "@/components/admin/EventStatCard";
+import { EventApprovalCard } from "@/components/admin/EventApprovalCard";
 import { Calendar, Play, Check, Ban } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type ApprovalStatus = "PENDING" | "APPROVED" | "REJECTED";
 
-export default function Dashboard() {
-  const [filter, setFilter] = useState<string>("ALL");
+type EventApiItem = {
+  id: string;
+  title: string;
+  description: string;
+  startDatetime: string;
+  endDatetime: string;
+  seats: number;
+  amount: number;
+  creatorId: string;
+  approvalStatus: ApprovalStatus;
+};
 
-  const dummyEvents: {
-    title: string;
-    description: string;
-    startDatetime: string;
-    endDatetime: string;
-    seats: number;
-    amount: number;
-    creator: string;
-    approvalStatus: ApprovalStatus;
-  }[] = [
-    {
-      title: "Tech Conference 2026",
-      description: "A conference about the latest in AI and cloud computing.",
-      startDatetime: "2026-04-01T10:00:00",
-      endDatetime: "2026-04-01T17:00:00",
-      seats: 200,
-      amount: 499,
-      creator: "Alice Johnson",
-      approvalStatus: "PENDING",
-    },
-    {
-      title: "Music Festival",
-      description: "Outdoor festival with multiple bands and food stalls.",
-      startDatetime: "2026-05-10T12:00:00",
-      endDatetime: "2026-05-10T23:00:00",
-      seats: 500,
-      amount: 999,
-      creator: "Bob Singh",
-      approvalStatus: "APPROVED",
-    },
-    {
-      title: "Startup Pitch Night",
-      description: "Local entrepreneurs pitch their ideas.",
-      startDatetime: "2026-06-15T18:00:00",
-      endDatetime: "2026-06-15T21:00:00",
-      seats: 100,
-      amount: 299,
-      creator: "Clara Lee",
-      approvalStatus: "REJECTED",
-    },
-  ];
+function useAdminEvents() {
+  const [events, setEvents] = useState<EventApiItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const run = async () => {
+      try {
+        const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ?? "http://localhost:3000";
+        const response = await fetch(`${apiBase}/api/event?take=100`, { cache: "no-store" });
+        const result = await response.json();
+
+        if (!response.ok) {
+          setError(result?.error ?? "Failed to fetch events");
+          return;
+        }
+
+        setEvents(Array.isArray(result) ? result : []);
+      } catch {
+        setError("Unable to load events.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    run();
+  }, []);
+
+  return { events, setEvents, loading, error };
+}
+
+export default function Dashboard() {
+  const { events, setEvents, loading, error } = useAdminEvents();
+  const [filter, setFilter] = useState<string>("ALL");
+  const [updatingEventId, setUpdatingEventId] = useState<string | null>(null);
+
+  const counts = useMemo(() => {
+    let pending = 0;
+    let approved = 0;
+    let rejected = 0;
+
+    for (const event of events) {
+      if (event.approvalStatus === "PENDING") pending += 1;
+      if (event.approvalStatus === "APPROVED") approved += 1;
+      if (event.approvalStatus === "REJECTED") rejected += 1;
+    }
+
+    return {
+      pending,
+      approved,
+      rejected,
+      total: events.length,
+    };
+  }, [events]);
 
   const filteredEvents =
     filter === "ALL"
-      ? dummyEvents
-      : dummyEvents.filter((e) => e.approvalStatus === filter);
+      ? events
+      : events.filter((e) => e.approvalStatus === filter);
+
+  const updateApprovalStatus = async (id: string, nextStatus: ApprovalStatus) => {
+    try {
+      setUpdatingEventId(id);
+      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ?? "http://localhost:3000";
+      const response = await fetch(`${apiBase}/api/event/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ approvalStatus: nextStatus }),
+      });
+
+      if (!response.ok) {
+        return;
+      }
+
+      setEvents((prev) =>
+        prev.map((event) =>
+          event.id === id ? { ...event, approvalStatus: nextStatus } : event,
+        ),
+      );
+    } finally {
+      setUpdatingEventId(null);
+    }
+  };
 
   return (
     <div className="w-full h-full">
@@ -65,44 +117,73 @@ export default function Dashboard() {
       <div className="flex justify-center m-5">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl">
           <EventStatCard
-            category="Upcoming Events"
-            count={123}
-            comparison="+1.34% Vs Last Month"
+            category="Pending Approval"
+            count={counts.pending}
+            comparison="Needs admin action"
             color="yellow"
             icon={<Calendar />}
           />
           <EventStatCard
-            category="Ongoing Events"
-            count={456}
-            comparison="-1.05% Vs Last Month"
+            category="Approved Events"
+            count={counts.approved}
+            comparison="Approved by admins"
             color="blue"
             icon={<Play />}
           />
           <EventStatCard
-            category="Completed Events"
-            count={789}
-            comparison="+2.74% Vs Last Month"
+            category="Rejected Events"
+            count={counts.rejected}
+            comparison="Rejected by admins"
             color="green"
             icon={<Check />}
           />
           <EventStatCard
-            category="Cancelled Events"
-            count={101}
-            comparison="+0.04% Vs Last Month"
+            category="Total Events"
+            count={counts.total}
+            comparison="All submitted events"
             color="red"
             icon={<Ban />}
           />
         </div>
       </div>
 
-      {/* Banner filter */}
-      <EventFilterBanner value={filter} onChange={setFilter}  />
+      <div className="mb-6 flex justify-center">
+        <div className="flex w-full max-w-2xl items-center justify-between rounded-md bg-gray-100 p-4 shadow">
+          <h2 className="text-lg font-semibold">Filter by Approval Status</h2>
+          <Select value={filter} onValueChange={setFilter}>
+            <SelectTrigger className="w-44">
+              <SelectValue placeholder="Select status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">All</SelectItem>
+              <SelectItem value="PENDING">Pending</SelectItem>
+              <SelectItem value="APPROVED">Approved</SelectItem>
+              <SelectItem value="REJECTED">Rejected</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {loading ? <p className="text-center text-sm text-muted-foreground">Loading events...</p> : null}
+      {error ? <p className="text-center text-sm text-destructive">{error}</p> : null}
 
       {/* Approval cards */}
       <div className="flex flex-col items-center space-y-6 mt-6">
-        {filteredEvents.map((event, idx) => (
-          <div key={idx} className="w-full max-w-2xl">
-            <EventApprovalCard {...event} />
+        {filteredEvents.map((event) => (
+          <div key={event.id} className="w-full max-w-2xl">
+            <EventApprovalCard
+              eventId={event.id}
+              title={event.title}
+              description={event.description}
+              startDatetime={event.startDatetime}
+              endDatetime={event.endDatetime}
+              seats={event.seats}
+              amount={event.amount}
+              creator={event.creatorId}
+              approvalStatus={event.approvalStatus}
+              loading={updatingEventId === event.id}
+              onDecision={updateApprovalStatus}
+            />
           </div>
         ))}
       </div>

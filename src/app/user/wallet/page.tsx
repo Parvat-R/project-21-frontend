@@ -4,8 +4,7 @@ import { WalletHistory } from "@/components/wallet/wallet-history"
 
 export default function WalletPage() {
     return (
-        <div className="min-h-screen bg-gray-50">
-            <div className="max-w-5xl mx-auto p-6 space-y-6">
+        <div className="max-w-5xl space-y-6">
                 
                 <div className="space-y-2">
                     <h1 className="text-3xl font-bold text-gray-900">My Wallet</h1>
@@ -33,7 +32,6 @@ export default function WalletPage() {
 
                 
                 <WalletHistory />
-            </div>
         </div>
     )
 }
