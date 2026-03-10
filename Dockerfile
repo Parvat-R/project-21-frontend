@@ -1,20 +1,22 @@
-FROM node:24-alpine
+FROM node:20-alpine
+
 WORKDIR /usr/home/frontend
 
 COPY package*.json ./
 RUN npm install
-RUN npm cache clean --force
 
 COPY . .
 
 ARG NEXT_PUBLIC_BACKEND_URL
-ARG NEXT_PUBLIC_JWT_SECRET
-
 ENV NEXT_PUBLIC_BACKEND_URL=${NEXT_PUBLIC_BACKEND_URL}
-ENV NEXT_PUBLIC_JWT_SECRET=${NEXT_PUBLIC_JWT_SECRET}
+
+ENV NODE_ENV=production
 
 RUN npm run build
 
-EXPOSE 3000
+ENV HOST=0.0.0.0
+ENV PORT=80
 
-CMD ["npm", "run", "start"] 
+EXPOSE 80
+
+CMD ["npm", "run", "start"]
