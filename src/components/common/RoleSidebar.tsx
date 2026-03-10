@@ -8,12 +8,16 @@ import {
   Landmark,
   ListFilter,
   Globe2,
+  ShieldCheck,
+  Users,
+  CalendarDays,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
 import { useEffect, useState } from "react";
+import { clearSession, getUser, type UserSession } from "@/lib/auth";
 
-type Role = "organiser" | "user";
+type Role = "organiser" | "user" | "admin";
 
 type NavItem = {
   label: string;
@@ -22,6 +26,11 @@ type NavItem = {
 };
 
 const roleNavItems: Record<Role, NavItem[]> = {
+  admin: [
+    { label: "Dashboard", href: "/admin/dashboard", icon: ShieldCheck },
+    { label: "All Events", href: "/admin/events", icon: CalendarDays },
+    { label: "Users", href: "/admin/users", icon: Users },
+  ],
   organiser: [
     {
       label: "Create Event",
@@ -46,24 +55,24 @@ const roleNavItems: Record<Role, NavItem[]> = {
 export function RoleSidebar({ role }: { role: Role }) {
   const pathname = usePathname();
   const navItems = roleNavItems[role];
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [user, setUser] = useState<UserSession | null>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    setIsLoggedIn(!!token);
+    setUser(getUser());
   }, []);
 
   const handleSignOut = () => {
-    localStorage.removeItem("token");
-    setIsLoggedIn(false);
-    // optionally redirect
+    clearSession();
+    setUser(null);
     window.location.href = "/signin";
   };
 
   return (
     <aside className="flex h-screen w-72 shrink-0 flex-col border-r border-border bg-background p-4">
       <div className="mb-6 rounded-lg border border-border bg-card p-4">
-        <p className="text-sm text-muted-foreground">Role</p>
+        <p className="text-xs text-muted-foreground uppercase tracking-wide">
+          Role
+        </p>
         <h2 className="text-lg font-semibold capitalize">{role}</h2>
       </div>
 
@@ -91,9 +100,17 @@ export function RoleSidebar({ role }: { role: Role }) {
         })}
       </nav>
 
-      <div className="mt-auto flex gap-4 pt-4 border-t border-border">
-        {isLoggedIn ? (
+      <div className="mt-auto flex flex-col gap-4 pt-4 border-t border-border">
+        {user !== null ? (
           <>
+            <div className="flex flex-col truncate px-1">
+              <span className="text-sm font-medium truncate">
+                {user.name || "User"}
+              </span>
+              <span className="text-xs text-muted-foreground truncate">
+                {user.email}
+              </span>
+            </div>
             <Button
               variant="outline"
               className="w-full"
@@ -101,9 +118,6 @@ export function RoleSidebar({ role }: { role: Role }) {
             >
               Sign Out
             </Button>
-            <Link href="/profile" className="flex-1">
-              <Button className="w-full">Profile</Button>
-            </Link>
           </>
         ) : (
           <>

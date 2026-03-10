@@ -1,14 +1,9 @@
-// components/EventApprovalCard.tsx
 "use client";
 
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-  CardFooter,
-} from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+
+type ApprovalStatus = "PENDING" | "APPROVED" | "REJECTED";
 
 interface EventApprovalCardProps {
   eventId: string;
@@ -19,13 +14,17 @@ interface EventApprovalCardProps {
   seats: number;
   amount: number;
   creator: string;
-  approvalStatus: "PENDING" | "APPROVED" | "REJECTED";
+  approvalStatus: ApprovalStatus;
+  imageUrl?: string;
   loading?: boolean;
-  onDecision: (
-    id: string,
-    status: "APPROVED" | "REJECTED",
-  ) => Promise<void> | void;
+  onDecision: (id: string, status: "APPROVED" | "REJECTED") => Promise<void> | void;
 }
+
+const statusColor: Record<ApprovalStatus, string> = {
+  PENDING: "text-yellow-600",
+  APPROVED: "text-green-600",
+  REJECTED: "text-red-600",
+};
 
 export function EventApprovalCard({
   eventId,
@@ -37,62 +36,89 @@ export function EventApprovalCard({
   amount,
   creator,
   approvalStatus,
+  imageUrl,
   loading = false,
   onDecision,
 }: EventApprovalCardProps) {
+  const start = new Date(startDatetime);
+  const end = new Date(endDatetime);
+
+  const dateStr = start.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+  });
+  const timeStr = start.toLocaleTimeString("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  const endTimeStr = end.toLocaleTimeString("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
-        <p className="text-sm text-muted-foreground">Created by {creator}</p>
+    <Card className="w-full shadow-md hover:shadow-lg transition p-4 cursor-default">
+      {/* Title + status label */}
+      <CardHeader className="pb-2">
+        <CardTitle className="text-lg font-semibold">{title}</CardTitle>
+        <p className={`text-sm font-semibold ${statusColor[approvalStatus]}`}>
+          {approvalStatus}
+        </p>
       </CardHeader>
-      <CardContent>
-        <p className="mb-2">{description}</p>
-        <div className="text-sm space-y-1">
-          <p>
-            <strong>Start:</strong> {new Date(startDatetime).toLocaleString()}
-          </p>
-          <p>
-            <strong>End:</strong> {new Date(endDatetime).toLocaleString()}
-          </p>
-          <p>
-            <strong>Seats:</strong> {seats}
-          </p>
-          <p>
-            <strong>Amount:</strong> ₹{amount}
-          </p>
-          <p>
-            <strong>Status:</strong>{" "}
-            <span
-              className={
-                approvalStatus === "APPROVED"
-                  ? "text-green-600 font-semibold"
-                  : approvalStatus === "REJECTED"
-                    ? "text-red-600 font-semibold"
-                    : "text-yellow-600 font-semibold"
-              }
-            >
-              {approvalStatus}
-            </span>
-          </p>
+
+      {/* Full-width image */}
+      {imageUrl ? (
+        <img
+          src={imageUrl}
+          alt={title}
+          className="w-full rounded-md object-cover"
+          style={{ height: "200px" }}
+        />
+      ) : (
+        <div className="flex w-full items-center justify-center rounded-md border border-dashed border-border bg-muted/30 text-xs text-muted-foreground" style={{ height: "200px" }}>
+          No image
         </div>
+      )}
+
+      {/* Details */}
+      <CardContent className="space-y-2 mt-3 pb-2">
+        <p className="text-sm">{description || "No description provided."}</p>
+        <p className="text-sm">
+          <strong>Date:</strong> {dateStr} at {timeStr} – {endTimeStr}
+        </p>
+        <p className="text-sm">
+          <strong>Creator:</strong>{" "}
+          <span className="font-mono text-xs">{creator}</span>
+        </p>
+        <p className="text-sm">
+          <strong>Seats:</strong> {seats}
+        </p>
+        <p className="text-sm">
+          <strong>Amount:</strong> ₹{amount}
+        </p>
       </CardContent>
-      <CardFooter className="flex gap-2">
+
+      {/* Approve / Reject actions */}
+      <div className="flex gap-2 px-4 pb-4">
         <Button
+          size="sm"
           variant="default"
+          className="flex-1"
           onClick={() => onDecision(eventId, "APPROVED")}
-          disabled={loading}
+          disabled={loading || approvalStatus === "APPROVED"}
         >
-          Approve
+          {loading ? "Updating..." : "Approve"}
         </Button>
         <Button
+          size="sm"
           variant="destructive"
+          className="flex-1"
           onClick={() => onDecision(eventId, "REJECTED")}
-          disabled={loading}
+          disabled={loading || approvalStatus === "REJECTED"}
         >
-          Reject
+          {loading ? "Updating..." : "Reject"}
         </Button>
-      </CardFooter>
+      </div>
     </Card>
   );
 }
