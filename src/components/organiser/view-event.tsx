@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Event, RegisteredUser } from "@/lib/types";
 import { EventDetails } from "./event-details";
 import { RegisteredUsersTable } from "./registered-users-table";
+import { EventFeedbackTab } from "./event-feedback-tab";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -179,22 +180,37 @@ export function ViewEvent({ event, eventId, registeredUsers = [], backHref = "/"
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="details">Event Details</TabsTrigger>
-          <TabsTrigger value="users">
-            Registered Users ({users.length})
-          </TabsTrigger>
+          {isCreator && (
+            <TabsTrigger value="users">
+              Registered Users ({users.length})
+            </TabsTrigger>
+          )}
+          {isCreator && (
+            <TabsTrigger value="feedback">
+              Feedback
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="details" className="mt-4">
           <EventDetails event={event} />
         </TabsContent>
 
-        <TabsContent value="users" className="mt-4">
-          {isUsersLoading ? (
-            <p className="text-sm text-muted-foreground">Loading registered users...</p>
-          ) : (
-            <RegisteredUsersTable users={users} />
-          )}
-        </TabsContent>
+        {isCreator && (
+          <TabsContent value="users" className="mt-4">
+            {isUsersLoading ? (
+              <p className="text-sm text-muted-foreground">Loading registered users...</p>
+            ) : (
+              <RegisteredUsersTable users={users} />
+            )}
+          </TabsContent>
+        )}
+
+        {isCreator && (
+          <TabsContent value="feedback" className="mt-4">
+            {eventId ? <EventFeedbackTab eventId={eventId} /> : <p>Invalid Event ID</p>}
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );

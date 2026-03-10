@@ -70,7 +70,7 @@ export function RoleSidebar({ role }: { role: Role }) {
   };
 
   return (
-    <aside className="flex h-screen w-72 shrink-0 flex-col border-r border-border bg-background p-4">
+    <aside className="sticky top-0 flex h-screen w-72 shrink-0 flex-col border-r border-border bg-background p-4">
       <div className="mb-6 rounded-lg border border-border bg-card p-4">
         <p className="text-xs text-muted-foreground uppercase tracking-wide">
           Role

@@ -49,37 +49,38 @@ export default function UserDashboardPage() {
         const userId = user.userId;
         const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ?? "http://localhost:3000";
 
-        // Fetch Stats
-        const statsRes = await fetch(`${apiBase}/api/user/dashboard-stats?userId=${userId}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (statsRes.ok) {
-          const statsData = await statsRes.json();
-          setStats({
-            totalRegistered: statsData.totalRegistered || 0,
-            amountSpent: statsData.amountSpent || 0,
-            eventsAttended: statsData.attendedCount || 0,
-            upcomingEvents: (statsData.totalRegistered || 0) - (statsData.missedCount || 0) - (statsData.attendedCount || 0),
-          });
-        }
-
         // Fetch Registered Events
         const eventsRes = await fetch(`${apiBase}/api/register/user/${userId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (eventsRes.ok) {
           const registrations = await eventsRes.json();
+          const regArray = Array.isArray(registrations) ? registrations : [];
 
           const now = new Date();
-          const formattedEvents: EventItem[] = (Array.isArray(registrations) ? registrations : []).map((reg: any) => {
+          
+          let totalSpent = 0;
+          let attendedCount = 0;
+          let upcomingCount = 0;
+
+          const formattedEvents: EventItem[] = regArray.map((reg: any) => {
             const ev = reg.event;
             const start = new Date(ev.startDatetime);
             const end = new Date(ev.endDatetime);
 
             let status: EventStatus = "UPCOMING";
-            if (now < start) status = "UPCOMING";
+            if (now < start) {
+              status = "UPCOMING";
+              upcomingCount++;
+            }
             else if (now >= start && now <= end) status = "ONGOING";
             else status = "COMPLETED";
+
+            totalSpent += Number(ev.amount || 0);
+
+            if (reg.attendance === true) {
+              attendedCount++;
+            }
 
             return {
               id: ev.id,
@@ -92,6 +93,13 @@ export default function UserDashboardPage() {
               status: status,
               imageUrl: ev.imageUrl
             };
+          });
+
+          setStats({
+            totalRegistered: regArray.length,
+            amountSpent: totalSpent,
+            eventsAttended: attendedCount,
+            upcomingEvents: upcomingCount,
           });
 
           setRegisteredEvents(formattedEvents);
