@@ -14,6 +14,7 @@ export interface Event {
   startDatetime: string;
   endDatetime: string;
   image?: string | StaticImageData;
+  imageUrl?: string;
   seats: number;
   amount: number;
   visibility: Visibility;

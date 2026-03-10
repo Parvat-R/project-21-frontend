@@ -13,10 +13,9 @@ type Props = {
 export default function EventCard({ event }: Props) {
   return (
     <Card className="overflow-hidden hover:shadow-xl transition">
-      {/* Image */}
       <div className="relative h-64 w-full">
         <Image
-          src={event.image}
+          src={event.image || "https://images.unsplash.com/photo-1540575467063-178a50c2df87?q=80&w=2000&auto=format&fit=crop"}
           alt={event.title}
           fill
           className="object-cover"
