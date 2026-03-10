@@ -47,11 +47,6 @@ export default function UserEventsPage() {
   }, []);
 
   return (
-<<<<<<< HEAD
-    <div>
-      <ViewEvent event={mockEvent} isRegistered={true} />
-    </div>
-=======
     <section className="space-y-4">
       <div>
         <h1 className="text-2xl font-semibold">Events</h1>
@@ -91,6 +86,5 @@ export default function UserEventsPage() {
         </div>
       ) : null}
     </section>
->>>>>>> 7a1b0e58bf8f3b1305bf44f24d5e57197b016f33
   );
 }
