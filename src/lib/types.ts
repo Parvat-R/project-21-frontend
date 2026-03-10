@@ -11,7 +11,7 @@ export interface Event {
   createdOn: string;
   startDatetime: string;
   endDatetime: string;
-  imageData: string;
+  imageUrl?: string;
   seats: number;
   amount: number;
   visibility: Visibility;
@@ -21,4 +21,5 @@ export interface RegisteredUser {
   id: string;
   email: string;
   approved: boolean;
+  registrationId?: string;
 }

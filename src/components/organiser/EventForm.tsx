@@ -35,8 +35,8 @@ function toDateTimeLocalValue(input: Date) {
 
 const now = new Date();
 const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
-
 const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
+
 const STEPS = ["basics", "details", "review"] as const;
 type Step = (typeof STEPS)[number];
 
@@ -55,7 +55,8 @@ export function EventForm() {
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
-  const [imageData, setImageData] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState("");
   const [imageName, setImageName] = useState("");
   const [activeStep, setActiveStep] = useState<Step>("basics");
 
@@ -85,8 +86,9 @@ export function EventForm() {
     const file = event.target.files?.[0];
 
     if (!file) {
-      setImageData(null);
+      setImageFile(null);
       setImageName("");
+      setImagePreview("");
       return;
     }
 
@@ -96,24 +98,44 @@ export function EventForm() {
     }
 
     if (file.size > MAX_IMAGE_SIZE_BYTES) {
-      setErrorMessage("Image must be smaller than 5MB.");
+      setErrorMessage("Image must be 5MB or smaller.");
       return;
     }
 
     try {
-      const encoded = await new Promise<string>((resolve, reject) => {
+      const preview = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => resolve(String(reader.result));
-        reader.onerror = () => reject(new Error("Failed to read image"));
+        reader.onerror = () => reject(new Error("Failed to read file"));
         reader.readAsDataURL(file);
       });
 
-      setImageData(encoded);
+      setImageFile(file);
       setImageName(file.name);
+      setImagePreview(preview);
       setErrorMessage("");
     } catch {
-      setErrorMessage("Could not process image file.");
+      setErrorMessage("Could not read the image file.");
     }
+  };
+
+  const uploadImageAndGetUrl = async (file: File) => {
+    const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ?? "http://localhost:3000";
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const uploadResponse = await fetch(`${apiBase}/api/upload-image`, {
+      method: "POST",
+      body: formData,
+    });
+
+    const uploadResult = await uploadResponse.json();
+
+    if (!uploadResponse.ok || !uploadResult?.imageUrl) {
+      throw new Error(uploadResult?.error ?? "Failed to upload image.");
+    }
+
+    return String(uploadResult.imageUrl);
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -155,7 +177,9 @@ export function EventForm() {
     setSubmitting(true);
 
     try {
-      const apiBase = "http://localhost:3000"; 
+      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ?? "http://localhost:3000";
+      const uploadedImageUrl = imageFile ? await uploadImageAndGetUrl(imageFile) : undefined;
+
       const response = await fetch(`${apiBase}/api/event`, {
         method: "POST",
         headers: {
@@ -171,7 +195,7 @@ export function EventForm() {
           amount: parsedAmount,
           visibility,
           creatorId: TEMP_CREATOR_ID,
-          imageData: imageData ?? undefined,
+          imageUrl: uploadedImageUrl,
         }),
       });
 
@@ -192,8 +216,9 @@ export function EventForm() {
       setVisibility("PUBLIC");
       setStartDatetime(toDateTimeLocalValue(new Date()));
       setEndDatetime(toDateTimeLocalValue(new Date(Date.now() + 60 * 60 * 1000)));
-      setImageData(null);
+      setImageFile(null);
       setImageName("");
+      setImagePreview("");
     } catch {
       setErrorMessage("Unable to reach backend. Check your API URL or backend server.");
     } finally {
@@ -403,15 +428,15 @@ export function EventForm() {
                     </div>
 
                     <Field>
-                      <FieldLabel htmlFor="imageUpload">Image Upload</FieldLabel>
+                      <FieldLabel htmlFor="imageUpload">Upload Image</FieldLabel>
                       <Input
                         id="imageUpload"
                         type="file"
-                        accept="image/*"
+                        accept="image/png,image/jpeg,image/webp,image/gif"
                         onChange={handleImageChange}
                       />
                       <FieldDescription>
-                        Optional. Max size 5MB. Stored in backend as event image bytes.
+                        Optional. File will be stored in backend `public/images`.
                       </FieldDescription>
                       {imageName ? <p className="text-xs text-muted-foreground">Selected: {imageName}</p> : null}
                     </Field>
@@ -445,11 +470,11 @@ export function EventForm() {
                     </p>
                   </div>
 
-                  {imageData ? (
+                  {imagePreview ? (
                     <div>
                       <p className="mb-2 text-sm font-medium">Image Preview</p>
                       <img
-                        src={imageData}
+                        src={imagePreview}
                         alt="Event preview"
                         className="max-h-56 rounded-md border border-border object-cover"
                       />

@@ -2,33 +2,7 @@ import { ViewEvent } from "@/components/organiser/view-event";
 import { RoleSidebar } from "@/components/common/RoleSidebar";
 import { Event } from "@/lib/types";
 
-function toImageSrc(imageData: unknown): string {
-  if (!imageData) return "";
-
-  if (typeof imageData === "string") {
-    if (imageData.startsWith("data:image/")) return imageData;
-    if (imageData.startsWith("http://") || imageData.startsWith("https://") || imageData.startsWith("/")) {
-      return imageData;
-    }
-    return `data:image/jpeg;base64,${imageData}`;
-  }
-
-  if (Array.isArray(imageData) && imageData.every((value) => typeof value === "number")) {
-    return `data:image/jpeg;base64,${Buffer.from(imageData).toString("base64")}`;
-  }
-
-  if (typeof imageData === "object") {
-    const bufferStyle = imageData as { type?: string; data?: number[] };
-    if (bufferStyle.type === "Buffer" && Array.isArray(bufferStyle.data)) {
-      return `data:image/jpeg;base64,${Buffer.from(bufferStyle.data).toString("base64")}`;
-    }
-  }
-
-  return "";
-}
-
-type EventApiResponse = Omit<Event, "imageData" | "amount"> & {
-  imageData?: unknown;
+type EventApiResponse = Omit<Event, "amount"> & {
   amount: number | string;
 };
 
@@ -54,7 +28,6 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
   const event: Event = {
     ...eventRaw,
     amount: Number(eventRaw.amount),
-    imageData: toImageSrc(eventRaw.imageData),
   };
 
   return (

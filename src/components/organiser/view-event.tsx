@@ -17,6 +17,7 @@ interface ViewEventProps {
 }
 
 type RegistrationApiResponse = {
+  id: string;
   user?: {
     id: string;
     email: string;
@@ -47,11 +48,12 @@ export function ViewEvent({ event, eventId, registeredUsers = [], backHref = "/"
 
         const data: RegistrationApiResponse[] = await response.json();
         const mappedUsers: RegisteredUser[] = (Array.isArray(data) ? data : [])
-          .filter((item) => item.user?.id && item.user?.email)
+          .filter((item) => item.id && item.user?.id && item.user?.email)
           .map((item) => ({
             id: item.user!.id,
             email: item.user!.email,
             approved: Boolean(item.attendance),
+            registrationId: item.id,
           }));
 
         setUsers(mappedUsers);

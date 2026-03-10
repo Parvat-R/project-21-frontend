@@ -58,9 +58,9 @@ export function EventDetails({ event }: EventDetailsProps) {
       <CardHeader className="pb-4">
         {/* Event image */}
         <div className="relative mb-4 h-56 w-full overflow-hidden rounded-lg bg-muted">
-          {event.imageData ? (
+          {event.imageUrl ? (
             <img
-              src={event.imageData}
+              src={event.imageUrl}
               alt={event.title}
               className="h-full w-full object-cover"
             />

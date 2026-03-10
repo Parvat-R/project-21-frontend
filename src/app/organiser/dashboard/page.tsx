@@ -18,10 +18,8 @@ type EventItem = {
   amount: number;
   seats: number;
   approvalStatus: "PENDING" | "APPROVED" | "REJECTED";
-  imageData?: unknown;
+  imageUrl?: string;
 };
-
-type EventCardItem = EventItem & { imageSrc: string };
 
 type EventStatus = "UPCOMING" | "ONGOING" | "COMPLETED" | "CANCELLED";
 
@@ -41,51 +39,8 @@ function getEventLifecycleStatus(event: Pick<EventItem, "startDatetime" | "endDa
   return "COMPLETED";
 }
 
-function toBase64FromBytes(bytes: number[]) {
-  if (!bytes.length) return "";
-
-  // Build base64 in chunks to avoid call stack / memory spikes on larger images.
-  let binary = "";
-  const chunkSize = 0x8000;
-
-  for (let index = 0; index < bytes.length; index += chunkSize) {
-    const chunk = bytes.slice(index, index + chunkSize);
-    binary += String.fromCharCode(...chunk);
-  }
-
-  return window.btoa(binary);
-}
-
-function toImageSource(imageData: unknown) {
-  if (!imageData) return "";
-
-  if (typeof imageData === "string") {
-    if (imageData.startsWith("data:image/")) return imageData;
-    if (imageData.startsWith("http://") || imageData.startsWith("https://") || imageData.startsWith("/")) {
-      return imageData;
-    }
-
-    return `data:image/jpeg;base64,${imageData}`;
-  }
-
-  if (Array.isArray(imageData) && imageData.every((value) => typeof value === "number")) {
-    const base64 = toBase64FromBytes(imageData as number[]);
-    return base64 ? `data:image/jpeg;base64,${base64}` : "";
-  }
-
-  if (typeof imageData === "object") {
-    const bufferStyle = imageData as { type?: string; data?: number[] };
-    if (bufferStyle.type === "Buffer" && Array.isArray(bufferStyle.data)) {
-      const base64 = toBase64FromBytes(bufferStyle.data);
-      return base64 ? `data:image/jpeg;base64,${base64}` : "";
-    }
-  }
-
-  return "";
-}
-
 export default function OrganiserDashboardPage() {
-  const [events, setEvents] = useState<EventCardItem[]>([]);
+  const [events, setEvents] = useState<EventItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [filter, setFilter] = useState<string>("ALL");
@@ -105,12 +60,7 @@ export default function OrganiserDashboardPage() {
           return;
         }
 
-        const normalized: EventCardItem[] = (Array.isArray(result) ? result : []).map((event) => ({
-          ...event,
-          imageSrc: toImageSource(event.imageData),
-        }));
-
-        setEvents(normalized);
+        setEvents(Array.isArray(result) ? result : []);
       } catch {
         setError("Unable to load dashboard events.");
       } finally {
@@ -190,18 +140,22 @@ export default function OrganiserDashboardPage() {
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
 
       {!loading && !error ? (
-        <div className="mt-6 flex flex-wrap gap-4">
+        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {filteredEvents.length > 0 ? (
             filteredEvents.map((event) => (
-              <div key={event.id} className="w-72">
-                <article className="h-72 rounded-lg border border-border bg-card p-4 flex flex-col">
-                  {event.imageSrc ? (
+              <div key={event.id} className="h-full">
+                <article className="flex h-full min-h-[28rem] flex-col rounded-lg border border-border bg-card p-4">
+                  {event.imageUrl ? (
                     <img
-                      src={event.imageSrc}
+                      src={event.imageUrl}
                       alt={event.title}
                       className="mb-3 h-28 w-full rounded-md border border-border object-cover"
                     />
-                  ) : null}
+                  ) : (
+                    <div className="mb-3 flex h-28 w-full items-center justify-center rounded-md border border-dashed border-border bg-muted/30 text-xs text-muted-foreground">
+                      No image
+                    </div>
+                  )}
 
                   <div className="mb-2 flex items-start justify-between gap-2">
                     <h2 className="line-clamp-1 text-base font-semibold">{event.title}</h2>
@@ -222,31 +176,33 @@ export default function OrganiserDashboardPage() {
                     {event.description || "No description"}
                   </p>
 
-                  <div className="grid grid-cols-1 gap-1 text-xs md:grid-cols-2 mt-auto">
-                    <p>
-                      <strong>Start:</strong> {new Date(event.startDatetime).toLocaleString()}
-                    </p>
-                    <p>
-                      <strong>End:</strong> {new Date(event.endDatetime).toLocaleString()}
-                    </p>
-                    <p>
-                      <strong>Seats:</strong> {event.seats}
-                    </p>
-                    <p>
-                      <strong>Amount:</strong> ₹{event.amount}
-                    </p>
-                    <p>
-                      <strong>Visibility:</strong> {event.visibility}
-                    </p>
-                    <p>
-                      <strong>Approval Flow:</strong> Pending admin action
-                    </p>
-                  </div>
+                  <div className="mt-auto space-y-3">
+                    <div className="grid grid-cols-1 gap-1 text-xs md:grid-cols-2">
+                      <p>
+                        <strong>Start:</strong> {new Date(event.startDatetime).toLocaleString()}
+                      </p>
+                      <p>
+                        <strong>End:</strong> {new Date(event.endDatetime).toLocaleString()}
+                      </p>
+                      <p>
+                        <strong>Seats:</strong> {event.seats}
+                      </p>
+                      <p>
+                        <strong>Amount:</strong> ₹{event.amount}
+                      </p>
+                      <p>
+                        <strong>Visibility:</strong> {event.visibility}
+                      </p>
+                      <p>
+                        <strong>Approval Flow:</strong> Pending admin action
+                      </p>
+                    </div>
 
-                  <div className="mt-3 flex justify-end">
-                    <Button size="sm" asChild>
-                      <Link href={`/organiser/events/${event.id}/edit`}>Edit Event</Link>
-                    </Button>
+                    <div className="flex justify-end">
+                      <Button size="sm" asChild>
+                        <Link href={`/organiser/events/${event.id}/edit`}>Edit Event</Link>
+                      </Button>
+                    </div>
                   </div>
                 </article>
               </div>

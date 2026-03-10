@@ -11,7 +11,7 @@ export const mockEvent: Event = {
   createdOn: "2026-02-15T10:00:00Z",
   startDatetime: "2026-04-10T09:00:00Z",
   endDatetime: "2026-04-12T18:00:00Z",
-  imageData: "/placeholder-event.jpg",
+  imageUrl: "/placeholder-event.jpg",
   seats: 500,
   amount: 1500,
   visibility: "PUBLIC",

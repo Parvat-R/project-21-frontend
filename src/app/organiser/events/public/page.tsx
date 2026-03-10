@@ -11,6 +11,7 @@ type EventItem = {
   visibility: "INTERNAL" | "PUBLIC";
   startDatetime: string;
   endDatetime: string;
+  imageUrl?: string;
 };
 
 export default function OrganiserPublicEventsPage() {
@@ -47,10 +48,22 @@ export default function OrganiserPublicEventsPage() {
       {loading ? <p className="text-sm text-muted-foreground">Loading public events...</p> : null}
 
       {!loading ? (
-        <div className="flex flex-wrap gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {publicEvents.length > 0 ? (
             publicEvents.map((event) => (
-              <article key={event.id} className="h-72 w-72 rounded-lg border border-border bg-card p-4 flex flex-col">
+              <article key={event.id} className="flex min-h-[24rem] flex-col rounded-lg border border-border bg-card p-4">
+                {event.imageUrl ? (
+                  <img
+                    src={event.imageUrl}
+                    alt={event.title}
+                    className="mb-3 h-28 w-full rounded-md border border-border object-cover"
+                  />
+                ) : (
+                  <div className="mb-3 flex h-28 w-full items-center justify-center rounded-md border border-dashed border-border bg-muted/30 text-xs text-muted-foreground">
+                    No image
+                  </div>
+                )}
+
                 <h2 className="line-clamp-1 text-base font-semibold">{event.title}</h2>
 
                 <div className="mt-3 space-y-1 text-xs text-muted-foreground">

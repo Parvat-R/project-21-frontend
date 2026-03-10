@@ -26,6 +26,7 @@ type EventApiResponse = {
   seats: number;
   amount: number | string;
   visibility: Visibility;
+  imageUrl?: string | null;
 };
 
 function toLocalDateTimeInput(iso: string) {
@@ -46,6 +47,8 @@ const slugify = (value: string) =>
     .replace(/\s+/g, "-")
     .replace(/-+/g, "-");
 
+  const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
+
 export default function EditOrganiserEventPage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
@@ -59,7 +62,10 @@ export default function EditOrganiserEventPage() {
   const [seats, setSeats] = useState("100");
   const [amount, setAmount] = useState("0");
   const [visibility, setVisibility] = useState<Visibility>("PUBLIC");
-  const [imageData, setImageData] = useState<string | null>(null);
+  const [imageUrl, setImageUrl] = useState("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageName, setImageName] = useState("");
+  const [imagePreview, setImagePreview] = useState("");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -91,6 +97,8 @@ export default function EditOrganiserEventPage() {
         setSeats(String(event.seats ?? 0));
         setAmount(String(event.amount ?? 0));
         setVisibility(event.visibility ?? "PUBLIC");
+        setImageUrl(event.imageUrl ?? "");
+        setImagePreview(event.imageUrl ?? "");
       } catch {
         setErrorMessage("Unable to load event data.");
       } finally {
@@ -104,7 +112,9 @@ export default function EditOrganiserEventPage() {
   const handleImageChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) {
-      setImageData(null);
+      setImageFile(null);
+      setImageName("");
+      setImagePreview(imageUrl);
       return;
     }
 
@@ -113,17 +123,45 @@ export default function EditOrganiserEventPage() {
       return;
     }
 
+    if (file.size > MAX_IMAGE_SIZE_BYTES) {
+      setErrorMessage("Image must be 5MB or smaller.");
+      return;
+    }
+
     try {
-      const encoded = await new Promise<string>((resolve, reject) => {
+      const preview = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => resolve(String(reader.result));
-        reader.onerror = () => reject(new Error("Failed to read image"));
+        reader.onerror = () => reject(new Error("Failed to read file"));
         reader.readAsDataURL(file);
       });
-      setImageData(encoded);
+
+      setImageFile(file);
+      setImageName(file.name);
+      setImagePreview(preview);
+      setErrorMessage("");
     } catch {
-      setErrorMessage("Unable to process image file.");
+      setErrorMessage("Could not read the image file.");
     }
+  };
+
+  const uploadImageAndGetUrl = async (file: File) => {
+    const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ?? "http://localhost:3000";
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const uploadResponse = await fetch(`${apiBase}/api/upload-image`, {
+      method: "POST",
+      body: formData,
+    });
+
+    const uploadResult = await uploadResponse.json();
+
+    if (!uploadResponse.ok || !uploadResult?.imageUrl) {
+      throw new Error(uploadResult?.error ?? "Failed to upload image.");
+    }
+
+    return String(uploadResult.imageUrl);
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -156,6 +194,8 @@ export default function EditOrganiserEventPage() {
 
     try {
       const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ?? "http://localhost:3000";
+      const nextImageUrl = imageFile ? await uploadImageAndGetUrl(imageFile) : imageUrl;
+
       const response = await fetch(`${apiBase}/api/event/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -168,7 +208,7 @@ export default function EditOrganiserEventPage() {
           seats: parsedSeats,
           amount: parsedAmount,
           visibility,
-          ...(imageData ? { imageData } : {}),
+          imageUrl: nextImageUrl.trim() || null,
         }),
       });
 
@@ -272,8 +312,21 @@ export default function EditOrganiserEventPage() {
               </div>
 
               <Field>
-                <FieldLabel htmlFor="imageUpload">Update Image (optional)</FieldLabel>
-                <Input id="imageUpload" type="file" accept="image/*" onChange={handleImageChange} />
+                <FieldLabel htmlFor="imageUpload">Upload New Image (optional)</FieldLabel>
+                <Input
+                  id="imageUpload"
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/gif"
+                  onChange={handleImageChange}
+                />
+                {imageName ? <p className="text-xs text-muted-foreground">Selected: {imageName}</p> : null}
+                {imagePreview ? (
+                  <img
+                    src={imagePreview}
+                    alt="Event preview"
+                    className="mt-2 max-h-44 rounded-md border border-border object-cover"
+                  />
+                ) : null}
               </Field>
             </FieldGroup>
 

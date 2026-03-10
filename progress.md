@@ -3,6 +3,17 @@
 Last updated: 2026-03-10
 Workspace: `S:\Python\JMAN Prep\Project`
 
+## Latest Update (Image Performance)
+- Migrated event image handling from DB bytes (`imageData`) to URL string (`imageUrl`).
+- Backend APIs now store and return `imageUrl`.
+- Frontend organiser create/edit forms now take image URL instead of file-to-base64 conversion.
+- Event dashboard/detail pages render image directly from `imageUrl`.
+- Prisma schema updated and database synced with `prisma db push --accept-data-loss`.
+
+Important:
+- Existing non-null byte images in `events.imageData` were dropped when schema synced.
+- Re-add images as URLs through edit/create flow.
+
 ## Project Structure
 - Backend: `Project-21` (Next.js + Prisma + PostgreSQL)
 - Frontend: `project-21-frontend` (Next.js + shadcn/ui)
