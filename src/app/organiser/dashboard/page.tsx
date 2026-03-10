@@ -24,12 +24,13 @@ type EventItem = {
 type EventStatus = "UPCOMING" | "ONGOING" | "COMPLETED" | "CANCELLED";
 
 function getEventLifecycleStatus(
-  event: Pick<EventItem, "startDatetime" | "endDatetime">
+  event: Pick<EventItem, "startDatetime" | "endDatetime">,
 ): EventStatus {
   const now = new Date();
   const start = new Date(event.startDatetime);
   const end = new Date(event.endDatetime);
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return "CANCELLED";
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()))
+    return "CANCELLED";
   if (now < start) return "UPCOMING";
   if (now >= start && now <= end) return "ONGOING";
   return "COMPLETED";
@@ -53,11 +54,10 @@ export default function OrganiserDashboardPage() {
     const run = async () => {
       try {
         const apiBase =
-          process.env.NEXT_PUBLIC_BASE_URL ||
-          "http://localhost:3000";
+          process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3000";
         const response = await fetch(
           `${apiBase}/api/event?creatorId=${user.userId}&take=50`,
-          { cache: "no-store" }
+          { cache: "no-store" },
         );
         const result = await response.json();
 
@@ -84,7 +84,10 @@ export default function OrganiserDashboardPage() {
 
   const stats = useMemo(() => {
     const counts: Record<EventStatus, number> = {
-      UPCOMING: 0, ONGOING: 0, COMPLETED: 0, CANCELLED: 0,
+      UPCOMING: 0,
+      ONGOING: 0,
+      COMPLETED: 0,
+      CANCELLED: 0,
     };
     for (const event of events) {
       counts[getEventLifecycleStatus(event)] += 1;
@@ -96,24 +99,48 @@ export default function OrganiserDashboardPage() {
     <section className="w-full h-full">
       <div className="mb-4">
         <h1 className="text-2xl font-semibold">Organiser Dashboard</h1>
-        <p className="text-sm text-muted-foreground">
-          Events created by you.
-        </p>
+        <p className="text-sm text-muted-foreground">Events created by you.</p>
       </div>
 
       {/* Stat cards */}
       <div className="flex justify-center m-5">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl w-full">
-          <EventStatCard category="Upcoming" count={stats.UPCOMING} comparison="Your events" color="yellow" icon={<Calendar />} />
-          <EventStatCard category="Ongoing" count={stats.ONGOING} comparison="Your events" color="blue" icon={<Play />} />
-          <EventStatCard category="Completed" count={stats.COMPLETED} comparison="Your events" color="green" icon={<Check />} />
-          <EventStatCard category="Cancelled" count={stats.CANCELLED} comparison="Your events" color="red" icon={<Ban />} />
+          <EventStatCard
+            category="Upcoming"
+            count={stats.UPCOMING}
+            comparison="Your events"
+            color="yellow"
+            icon={<Calendar />}
+          />
+          <EventStatCard
+            category="Ongoing"
+            count={stats.ONGOING}
+            comparison="Your events"
+            color="blue"
+            icon={<Play />}
+          />
+          <EventStatCard
+            category="Completed"
+            count={stats.COMPLETED}
+            comparison="Your events"
+            color="green"
+            icon={<Check />}
+          />
+          <EventStatCard
+            category="Cancelled"
+            count={stats.CANCELLED}
+            comparison="Your events"
+            color="red"
+            icon={<Ban />}
+          />
         </div>
       </div>
 
       <EventFilterBanner value={filter} onChange={setFilter} />
 
-      {loading ? <p className="text-sm text-muted-foreground">Loading events...</p> : null}
+      {loading ? (
+        <p className="text-sm text-muted-foreground">Loading events...</p>
+      ) : null}
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
 
       {!loading && !error ? (
@@ -137,7 +164,9 @@ export default function OrganiserDashboardPage() {
               />
             ))
           ) : (
-            <p className="text-sm text-muted-foreground">No events found for this filter.</p>
+            <p className="text-sm text-muted-foreground">
+              No events found for this filter.
+            </p>
           )}
         </div>
       ) : null}

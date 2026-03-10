@@ -30,8 +30,7 @@ export default function AdminEventsPage() {
     const run = async () => {
       try {
         const apiBase =
-          process.env.NEXT_PUBLIC_BASE_URL ||
-          "http://localhost:3000";
+          process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3000";
         const response = await fetch(`${apiBase}/api/event?take=100`, {
           cache: "no-store",
         });
@@ -55,10 +54,13 @@ export default function AdminEventsPage() {
       filter === "ALL"
         ? events
         : events.filter((e) => e.approvalStatus === filter),
-    [filter, events]
+    [filter, events],
   );
 
-  const updateApprovalStatus = async (id: string, nextStatus: ApprovalStatus) => {
+  const updateApprovalStatus = async (
+    id: string,
+    nextStatus: ApprovalStatus,
+  ) => {
     try {
       setUpdatingEventId(id);
       const apiBase =
@@ -72,8 +74,8 @@ export default function AdminEventsPage() {
       if (!response.ok) return;
       setEvents((prev) =>
         prev.map((event) =>
-          event.id === id ? { ...event, approvalStatus: nextStatus } : event
-        )
+          event.id === id ? { ...event, approvalStatus: nextStatus } : event,
+        ),
       );
     } finally {
       setUpdatingEventId(null);
