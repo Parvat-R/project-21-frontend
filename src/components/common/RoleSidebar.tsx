@@ -77,7 +77,7 @@ export function RoleSidebar({ role }: { role: Role }) {
         <h2 className="text-lg font-semibold capitalize">{role}</h2>
       </div>
 
-      <nav className="space-y-1 flex-1">
+      <nav className="space-y-1 flex-1 overflow-y-auto pr-2">
         {navItems.map((item) => {
           const active =
             pathname === item.href || pathname.startsWith(`${item.href}/`);
