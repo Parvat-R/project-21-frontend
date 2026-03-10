@@ -14,7 +14,7 @@ variables:
   imageRepository: 'project21frontend'
   containerRegistry: 'project21frontend.azurecr.io'
   dockerfilePath: '**/Dockerfile'
-  tag: '$(Build.BuildId)'
+  tag: '91'
   subscriptionId: $(subscriptionId)
 
   # Agent VM image name
