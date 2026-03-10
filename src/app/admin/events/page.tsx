@@ -1,82 +1,137 @@
-// app/events/page.tsx
 "use client";
 
-import { useState } from "react";
-import { EventCard } from "@/components/admin/EventCard";
+import { useEffect, useMemo, useState } from "react";
+import { EventApprovalCard } from "@/components/admin/EventApprovalCard";
 import { EventFilterBanner } from "@/components/admin/EventFilterBanner";
-import img from "@/assests/event.png";
-import { StaticImageData } from "next/dist/shared/lib/image-external";
 
-type EventStatus = "UPCOMING" | "ONGOING" | "COMPLETED" | "CANCELLED";
+type ApprovalStatus = "PENDING" | "APPROVED" | "REJECTED";
 
-interface EventData {
+type EventApiItem = {
   id: string;
   title: string;
   description: string;
-  date: string;
-  time: string;
-  location: string;
-  attendees: string;
-  rating: string;
-  image: string | StaticImageData;
-  status: EventStatus;
-}
+  startDatetime: string;
+  endDatetime: string;
+  seats: number;
+  amount: number;
+  creatorId: string;
+  approvalStatus: ApprovalStatus;
+  imageUrl?: string;
+};
 
-export default function EventsPage() {
-  const [filter, setFilter] = useState<EventStatus | "ALL">("ALL");
+export default function AdminEventsPage() {
+  const [events, setEvents] = useState<EventApiItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [filter, setFilter] = useState("ALL");
+  const [updatingEventId, setUpdatingEventId] = useState<string | null>(null);
 
-  const dummyEvents: EventData[] = [
-    {
-      id: "1",
-      title: "City Marathon 2024",
-      description: "Annual marathon event with thousands of participants.",
-      date: "Jan 03",
-      time: "07:00 AM",
-      location: "Uyanwatta Ground, Sri Lanka",
-      attendees: "5678",
-      rating: "★★★★☆",
-      image: img,
-      status: "UPCOMING",
-    },
-    {
-      id: "2",
-      title: "IIT Convocation",
-      description: "Graduation ceremony for IIT students.",
-      date: "Jan 13",
-      time: "11:00 AM",
-      location: "BMICH, Sri Lanka",
-      attendees: "4000+",
-      rating: "★★★★☆",
-      image: img,
-      status: "COMPLETED",
-    },
-    {
-      id: "3",
-      title: "Summer Beats Festival",
-      description: "Music festival with international artists.",
-      date: "Dec 15",
-      time: "07:00 PM",
-      location: "Wembley Stadium, London",
-      attendees: "20000+",
-      rating: "★★★★★",
-      image: img,
-      status: "UPCOMING",
-    },
-  ];
+  useEffect(() => {
+    const run = async () => {
+      try {
+        const apiBase =
+          process.env.NEXT_PUBLIC_BASE_URL ||
+          "http://localhost:3000";
+        const response = await fetch(`${apiBase}/api/event?take=100`, {
+          cache: "no-store",
+        });
+        const result = await response.json();
+        if (!response.ok) {
+          setError(result?.error ?? "Failed to fetch events");
+          return;
+        }
+        setEvents(Array.isArray(result) ? result : []);
+      } catch {
+        setError("Unable to load events.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    run();
+  }, []);
 
-  const filteredEvents =
-    filter === "ALL"
-      ? dummyEvents
-      : dummyEvents.filter((e) => e.status === filter);
+  const filteredEvents = useMemo(
+    () =>
+      filter === "ALL"
+        ? events
+        : events.filter((e) => e.approvalStatus === filter),
+    [filter, events]
+  );
+
+  const updateApprovalStatus = async (id: string, nextStatus: ApprovalStatus) => {
+    try {
+      setUpdatingEventId(id);
+      const apiBase =
+        process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ??
+        "http://localhost:3000";
+      const response = await fetch(`${apiBase}/api/event/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ approvalStatus: nextStatus }),
+      });
+      if (!response.ok) return;
+      setEvents((prev) =>
+        prev.map((event) =>
+          event.id === id ? { ...event, approvalStatus: nextStatus } : event
+        )
+      );
+    } finally {
+      setUpdatingEventId(null);
+    }
+  };
 
   return (
+<<<<<<< HEAD
     <div className="w-full h-full flex flex-col items-center p-6">
       <EventFilterBanner value={filter} onChange={(val) => setFilter(val as EventStatus | "ALL")} />
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredEvents.map((event, idx) => (
           <EventCard key={idx} {...event} />
         ))}
+=======
+    <section className="w-full h-full">
+      <div className="mb-4">
+        <h1 className="text-2xl font-semibold">All Events</h1>
+        <p className="text-sm text-muted-foreground">
+          Browse, filter, and manage all submitted events.
+        </p>
+>>>>>>> 7a1b0e58bf8f3b1305bf44f24d5e57197b016f33
       </div>
-    </div>
+
+      <EventFilterBanner value={filter} onChange={setFilter} />
+
+      {loading ? (
+        <p className="text-sm text-muted-foreground">Loading events...</p>
+      ) : null}
+      {error ? <p className="text-sm text-destructive">{error}</p> : null}
+
+      {!loading && !error ? (
+        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {filteredEvents.length > 0 ? (
+            filteredEvents.map((event) => (
+              <EventApprovalCard
+                key={event.id}
+                eventId={event.id}
+                title={event.title}
+                description={event.description}
+                startDatetime={event.startDatetime}
+                endDatetime={event.endDatetime}
+                seats={event.seats}
+                amount={event.amount}
+                creator={event.creatorId}
+                approvalStatus={event.approvalStatus}
+                imageUrl={event.imageUrl}
+                loading={updatingEventId === event.id}
+                onDecision={updateApprovalStatus}
+              />
+            ))
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              No events found for this filter.
+            </p>
+          )}
+        </div>
+      ) : null}
+    </section>
   );
 }
