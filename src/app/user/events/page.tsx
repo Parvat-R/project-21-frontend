@@ -4,7 +4,7 @@ import { mockEvent } from "@/lib/mock-data";
 export default function EventPage() {
   return (
     <div>
-      <ViewEvent event={mockEvent} />
+      <ViewEvent event={mockEvent} isRegistered={true} />
     </div>
   );
 }

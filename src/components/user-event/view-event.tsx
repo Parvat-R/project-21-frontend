@@ -5,15 +5,17 @@ import { EventDetails } from "./event-details";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { FeedbackDialog } from "@/components/common/FeedbackDialog";
 
 interface ViewEventProps {
   event: Event;
+  isRegistered?: boolean;
 }
 
-export function ViewEvent({ event }: ViewEventProps) {
+export function ViewEvent({ event, isRegistered = false }: ViewEventProps) {
   return (
     <div className="mx-auto max-w-4xl space-y-6 px-4 py-8">
-      {/* Back button */}
+
       <Link href="/">
         <Button variant="ghost" size="sm" className="gap-1">
           <ArrowLeft className="h-4 w-4" />
@@ -23,9 +25,12 @@ export function ViewEvent({ event }: ViewEventProps) {
 
       <EventDetails event={event} />
 
-      {/* Register button */}
-      <div className="flex justify-end">
-        <Button>Register for Event</Button>
+
+      <div className="flex justify-end gap-3">
+        {isRegistered && <FeedbackDialog />}
+        <Button disabled={isRegistered}>
+          {isRegistered ? "Registered" : "Register for Event"}
+        </Button>
       </div>
     </div>
   );

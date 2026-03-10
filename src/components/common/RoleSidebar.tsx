@@ -22,7 +22,8 @@ const roleNavItems: Record<Role, NavItem[]> = {
     { label: "Wallet", href: "/organiser/wallet", icon: Landmark },
   ],
   user: [
-    { label: "My Events", href: "/user/events", icon: LayoutDashboard },
+    { label: "Dashboard", href: "/user/dashboard", icon: LayoutDashboard },
+    { label: "Public Events", href: "/user/events/public", icon: Globe2 },
     { label: "Wallet", href: "/user/wallet", icon: Landmark },
   ],
 };
