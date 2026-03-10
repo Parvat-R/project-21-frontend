@@ -15,6 +15,7 @@ variables:
   containerRegistry: 'project21frontend.azurecr.io'
   dockerfilePath: '**/Dockerfile'
   tag: '$(Build.BuildId)'
+  subscriptionId: $(subscriptionId)
 
   # Agent VM image name
   vmImageName: 'ubuntu-latest'
@@ -31,13 +32,23 @@ stages:
     steps:
     - script: docker system prune -a -f
 
+    - task: AzureKeyVault@2
+      inputs:
+        azureSubscription: $(subscribtionId)
+        KeyVaultName: 'project-21-key-vault'
+        SecretsFilter: '*'
+
     - task: Docker@2
       displayName: Build image
+      env:
+        NEXT_PUBLIC_JWT_SECRET: $(NEXTPUBLICJWTSECRET)
+        NEXT_PUBLIC_BACKEND_URL: $(NEXTPUBLICBACKENDURL)
       inputs:
         command: build
         repository: $(imageRepository)
         dockerfile: $(dockerfilePath)
         containerRegistry: $(dockerRegistryServiceConnection)
+        arguments: --build-arg NEXT_PUBLIC_JWT_SECRET=$(NEXT_PUBLIC_JWT_SECRET) --build-arg NEXT_PUBLIC_BACKEND_URL=$(NEXT_PUBLIC_BACKEND_URL)
         tags: |
           $(tag)
 
