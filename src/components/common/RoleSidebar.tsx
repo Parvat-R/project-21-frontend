@@ -44,6 +44,7 @@ const roleNavItems: Record<Role, NavItem[]> = {
       icon: ListFilter,
     },
     { label: "Public Events", href: "/organiser/events/public", icon: Globe2 },
+    { label: "Registered Events", href: "/organiser/events/registered", icon: CalendarDays },
     { label: "Wallet", href: "/organiser/wallet", icon: Landmark },
   ],
   user: [

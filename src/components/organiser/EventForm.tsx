@@ -14,6 +14,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 type Visibility = "INTERNAL" | "PUBLIC";
 
@@ -61,8 +63,8 @@ export function EventForm() {
   const [imageName, setImageName] = useState("");
   const [activeStep, setActiveStep] = useState<Step>("basics");
 
-  // Read creator ID from the signed-in user's JWT session
   const creatorId = getUser()?.userId ?? "";
+  const router = useRouter();
 
   const canSubmit = useMemo(() => {
     return (
@@ -218,12 +220,15 @@ export function EventForm() {
 
       if (!response.ok) {
         setErrorMessage(result?.error ?? "Failed to create event.");
+        toast.error("Failed to create event.");
         return;
       }
 
       setSuccessMessage(
         `Event created successfully${result?.id ? ` (ID: ${result.id})` : ""}.`
       );
+      toast.success("Event created successfully!");
+      
       setTitle("");
       setDescription("");
       setSlug("");
@@ -236,8 +241,11 @@ export function EventForm() {
       setImageFile(null);
       setImageName("");
       setImagePreview("");
+      
+      router.push("/organiser/dashboard");
     } catch {
       setErrorMessage("Unable to reach backend. Check your API URL or backend server.");
+      toast.error("Unable to reach backend.");
     } finally {
       setSubmitting(false);
     }

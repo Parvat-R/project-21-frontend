@@ -9,6 +9,7 @@ import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { getUser } from "@/lib/auth";
+import { toast } from "sonner";
 
 interface ViewEventProps {
   event: Event;
@@ -79,6 +80,32 @@ export function ViewEvent({ event, eventId, registeredUsers = [], backHref = "/"
     loadUsers();
   }, [activeTab, usersLoaded, eventId]);
 
+  const [hasRegistered, setHasRegistered] = useState(false);
+  const [isCheckingReg, setIsCheckingReg] = useState(false);
+
+  useEffect(() => {
+    if (!eventId || !currentUser?.userId || isCreator) return;
+
+    const checkRegistration = async () => {
+      setIsCheckingReg(true);
+      try {
+        const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ?? "http://localhost:3000";
+        const res = await fetch(`${apiBase}/api/register/user/${currentUser.userId}`);
+        if (res.ok) {
+          const list = await res.json();
+          const registered = Array.isArray(list) && list.some((reg) => reg.eventId === eventId);
+          setHasRegistered(registered);
+        }
+      } catch (err) {
+        // ignore
+      } finally {
+        setIsCheckingReg(false);
+      }
+    };
+
+    checkRegistration();
+  }, [eventId, currentUser?.userId, isCreator]);
+
   return (
     <div className="mx-auto max-w-4xl space-y-6 px-4 py-8">
       {/* Back + Action row */}
@@ -100,7 +127,7 @@ export function ViewEvent({ event, eventId, registeredUsers = [], backHref = "/"
           {resolvedShowRegister && (
             <Button
               size="sm"
-              disabled={registering || !!registerMsg}
+              disabled={registering || !!registerMsg || hasRegistered || isCheckingReg}
               onClick={async () => {
                 if (!eventId) return;
                 setRegistering(true);
@@ -119,18 +146,28 @@ export function ViewEvent({ event, eventId, registeredUsers = [], backHref = "/"
                   });
                   if (res.ok) {
                     setRegisterMsg("Registered successfully!");
+                    setHasRegistered(true);
+                    toast.success("Registered successfully!");
                   } else {
                     const data = await res.json();
-                    setRegisterError(data?.error ?? "Registration failed.");
+                    if (res.status === 409 || data?.message === "Already registered for this event") {
+                      setRegisterError("Already registered");
+                      setHasRegistered(true);
+                      toast.error("Already registered");
+                    } else {
+                      setRegisterError(data?.error ?? data?.message ?? "Registration failed.");
+                      toast.error("Registration failed");
+                    }
                   }
                 } catch {
                   setRegisterError("Unable to reach server.");
+                  toast.error("Unable to reach server");
                 } finally {
                   setRegistering(false);
                 }
               }}
             >
-              {registering ? "Registering..." : registerMsg ? "Registered ✓" : "Register"}
+              {isCheckingReg ? "Checking..." : registering ? "Registering..." : (hasRegistered || registerMsg) ? "Registered ✓" : "Register"}
             </Button>
           )}
         </div>
