@@ -5,6 +5,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { signUp } from "@/services/operations/Auth";
+import { sign } from "crypto";
 
 export default function SignUpPage() {
   const [username, setUsername] = useState("");
@@ -13,11 +15,9 @@ export default function SignUpPage() {
   const router = useRouter();
 
   const handleSignup = () => {
-    // Dummy signup logic
     console.log("Signup:", { username, email, password });
-    alert(`Signed up as ${username} (${email})`);
+    signUp({ user: username, email, password })(); 
 
-    // Redirect to Sign In page
     router.push("/signin");
   };
 
