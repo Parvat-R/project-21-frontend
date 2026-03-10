@@ -61,8 +61,8 @@ stages:
         tags: |
           $(tag)
 
-    # - task: AzureWebAppContainer@1
-    #   inputs:
-    #     azureSubscription: 'Azure subscription 1(0839a5ee-329a-4b35-82c1-7c70e55542eb)'
-    #     appName: 'project-21-frontend'
-    #     containers: 'project21frontend.azurecr.io/project21frontend:91'
+    - task: AzureWebAppContainer@1
+      inputs:
+        azureSubscription: 'Azure subscription 1(0839a5ee-329a-4b35-82c1-7c70e55542eb)'
+        appName: 'project-21-frontend'
+        containers: 'project21frontend.azurecr.io/project21frontend:91'
