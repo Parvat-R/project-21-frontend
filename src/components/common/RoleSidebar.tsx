@@ -44,6 +44,7 @@ const roleNavItems: Record<Role, NavItem[]> = {
       icon: ListFilter,
     },
     { label: "Public Events", href: "/organiser/events/public", icon: Globe2 },
+    { label: "Registered Events", href: "/organiser/events/registered", icon: CalendarDays },
     { label: "Wallet", href: "/organiser/wallet", icon: Landmark },
   ],
   user: [
@@ -69,7 +70,13 @@ export function RoleSidebar({ role }: { role: Role }) {
   };
 
   return (
-    <aside className="flex h-screen w-72 shrink-0 flex-col border-r border-border bg-background p-4">
+    <aside className="sticky top-0 flex h-screen w-72 shrink-0 flex-col border-r border-border bg-background p-4">
+      <div className="mb-6 px-1">
+        <Link href="/" className="text-2xl font-extrabold tracking-tight">
+          JEVENT
+        </Link>
+      </div>
+
       <div className="mb-6 rounded-lg border border-border bg-card p-4">
         <p className="text-xs text-muted-foreground uppercase tracking-wide">
           Role
@@ -77,7 +84,7 @@ export function RoleSidebar({ role }: { role: Role }) {
         <h2 className="text-lg font-semibold capitalize">{role}</h2>
       </div>
 
-      <nav className="space-y-1 flex-1">
+      <nav className="space-y-1 flex-1 overflow-y-auto pr-2">
         {navItems.map((item) => {
           const active =
             pathname === item.href || pathname.startsWith(`${item.href}/`);

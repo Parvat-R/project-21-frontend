@@ -24,7 +24,7 @@ export default function Footer() {
             </p>
 
             <p className="flex items-center gap-2">
-              <Mail size={16} /> support@eventhub.com
+              <Mail size={16} /> support@jevent.com
             </p>
 
             <p className="flex items-center gap-2">
@@ -45,7 +45,7 @@ export default function Footer() {
 
       {/* Bottom */}
       <div className="border-t border-zinc-800 py-6 text-center text-sm">
-        © {new Date().getFullYear()} EventHub. All rights reserved.
+        © {new Date().getFullYear()} JEVENT. All rights reserved.
       </div>
     </footer>
   );
