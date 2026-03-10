@@ -48,7 +48,7 @@ stages:
         repository: $(imageRepository)
         dockerfile: $(dockerfilePath)
         containerRegistry: $(dockerRegistryServiceConnection)
-        arguments: -p 80:3000 --build-arg NEXT_PUBLIC_JWT_SECRET=$(NEXT_PUBLIC_JWT_SECRET) --build-arg NEXT_PUBLIC_BACKEND_URL=$(NEXT_PUBLIC_BACKEND_URL)
+        arguments: --build-arg NEXT_PUBLIC_JWT_SECRET=$(NEXT_PUBLIC_JWT_SECRET) --build-arg NEXT_PUBLIC_BACKEND_URL=$(NEXT_PUBLIC_BACKEND_URL)
         tags: |
           $(tag)
 
