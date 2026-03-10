@@ -1,0 +1,36 @@
+# Docker
+# Build and push an image to Azure Container Registry
+# https://docs.microsoft.com/azure/devops/pipelines/languages/docker
+
+trigger:
+- dev
+
+resources:
+- repo: self
+
+variables:
+  # Container registry service connection established during pipeline creation
+  dockerRegistryServiceConnection: '876f8134-febe-4e80-9ab9-713bb6485171'
+  imageRepository: 'project21frontend'
+  containerRegistry: 'project21frontend.azurecr.io'
+  tag: '91'
+
+  # Agent VM image name
+  vmImageName: 'ubuntu-latest'
+
+
+stages:
+- stage: Deploy
+  displayName: Deploy The IMAGE
+  jobs:
+  - job: Deploy
+    displayName: Deploy
+    pool:
+      name: project-21-backend-pool
+    steps:
+
+    - task: AzureWebAppContainer@1
+      inputs:
+        azureSubscription: 'Azure subscription 1(0839a5ee-329a-4b35-82c1-7c70e55542eb)'
+        appName: 'project-21-frontend'
+        containers: 'project21frontend.azurecr.io/project21frontend:91'
