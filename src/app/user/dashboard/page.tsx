@@ -1,289 +1,282 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { Calendar, Play, Check, Ticket, CreditCard, Clock } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Calendar, Play, Check, IndianRupee, MapPin, UserCheck, TicketCheck } from "lucide-react";
 import { EventStatCard } from "@/components/admin/EventStatCard";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+
+type EventStatus = "UPCOMING" | "ONGOING" | "COMPLETED" | "CANCELLED";
 
 type EventItem = {
   id: string;
   title: string;
   description: string;
-  visibility: "INTERNAL" | "PUBLIC";
-  creatorId: string;
   startDatetime: string;
   endDatetime: string;
   amount: number;
-  seats: number;
-  approvalStatus: "PENDING" | "APPROVED" | "REJECTED";
+  location: string;
+  status: EventStatus;
   imageUrl?: string;
 };
 
-type EventStatus = "UPCOMING" | "ONGOING" | "COMPLETED" | "CANCELLED";
+import jwt from "jsonwebtoken";
 
-function getEventLifecycleStatus(event: Pick<EventItem, "startDatetime" | "endDatetime">): EventStatus {
-  const now = new Date();
-  const start = new Date(event.startDatetime);
-  const end = new Date(event.endDatetime);
-
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
-    return "CANCELLED";
-  }
-
-  if (now < start) return "UPCOMING";
-  if (now >= start && now <= end) return "ONGOING";
-  return "COMPLETED";
-}
+// ------------------------------------
 
 export default function UserDashboardPage() {
-  const [events, setEvents] = useState<EventItem[]>([]);
+  const [filter, setFilter] = useState<EventStatus | "ALL">("ALL");
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [activeTab, setActiveTab] = useState<EventStatus | "ALL">("ALL");
+  const [stats, setStats] = useState({
+    totalRegistered: 0,
+    amountSpent: 0,
+    eventsAttended: 0,
+    upcomingEvents: 0,
+  });
+  const [registeredEvents, setRegisteredEvents] = useState<EventItem[]>([]);
 
   useEffect(() => {
-    const fetchRegisteredEvents = async () => {
+    const fetchUserData = async () => {
       try {
-        const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ?? "http://localhost:3000";
-        // Fetching all approved events for now since we can't change backend API.
-        // We will locally mock which events the user is registered to for demonstration.
-        const response = await fetch(
-          `${apiBase}/api/event?approvalStatus=APPROVED&includeImage=true&take=50`,
-          { cache: "no-store" }
-        );
-        const result = await response.json();
-
-        if (!response.ok) {
-          setError(result?.error ?? "Failed to fetch events.");
+        const token = localStorage.getItem("token");
+        if (!token) {
+          setLoading(false);
           return;
         }
 
-        const fetchedEvents = Array.isArray(result) ? result : [];
-        
-        // MOCK: We simulate the user being registered to 60% of the fetched events randomly 
-        // or just take the first few to populate "My Events" reliably without backend changes.
-        const myRegisteredEvents = fetchedEvents.filter((_, idx) => idx % 2 === 0);
-        
-        setEvents(myRegisteredEvents);
-      } catch {
-        setError("Unable to load your registered events.");
+        // Warning: jsonwebtoken verify doesn't work in browser purely, usually just decode is better.
+        // We will just decode it normally.
+        const payloadBase64 = token.split('.')[1];
+        if (!payloadBase64) return;
+        const decodedString = atob(payloadBase64);
+        const userPayload = JSON.parse(decodedString);
+        const userId = userPayload.userId || userPayload.id; // Adjust based on token structure
+
+        if (!userId) {
+            setLoading(false);
+            return;
+        }
+
+        const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ?? "http://localhost:3000";
+
+        // Fetch Stats
+        const statsRes = await fetch(`${apiBase}/api/user/dashboard-stats?userId=${userId}`);
+        if (statsRes.ok) {
+           const statsData = await statsRes.json();
+           setStats({
+               totalRegistered: statsData.totalRegistered || 0,
+               amountSpent: statsData.amountSpent || 0,
+               eventsAttended: statsData.attendedCount || 0,
+               upcomingEvents: (statsData.totalRegistered || 0) - (statsData.missedCount || 0) - (statsData.attendedCount || 0),
+           });
+        }
+
+        // Fetch Registered Events
+        const eventsRes = await fetch(`${apiBase}/api/register/user/${userId}`);
+        if (eventsRes.ok) {
+           const registrations = await eventsRes.json();
+           
+           // Format events to match the EventItem type
+           const now = new Date();
+           const formattedEvents = Array.isArray(registrations) ? registrations.map((reg: any) => {
+               const ev = reg.event;
+               const start = new Date(ev.startDatetime);
+               const end = new Date(ev.endDatetime);
+               
+               let status: EventStatus = "UPCOMING";
+               if (now < start) status = "UPCOMING";
+               else if (now >= start && now <= end) status = "ONGOING";
+               else status = "COMPLETED";
+
+               return {
+                   id: ev.id,
+                   title: ev.title,
+                   description: ev.description,
+                   startDatetime: ev.startDatetime,
+                   endDatetime: ev.endDatetime,
+                   amount: ev.amount,
+                   location: ev.location || "Online",
+                   status: status,
+                   imageUrl: ev.imageUrl
+               };
+           }) : [];
+
+           setRegisteredEvents(formattedEvents);
+        }
+      } catch (err) {
+         console.error("Dashboard fetch error:", err);
       } finally {
-        setLoading(false);
+         setLoading(false);
       }
     };
 
-    fetchRegisteredEvents();
+    fetchUserData();
   }, []);
 
-  const filteredEvents = useMemo(() => {
-    if (activeTab === "ALL") return events;
-    return events.filter((event) => getEventLifecycleStatus(event) === activeTab);
-  }, [activeTab, events]);
-
-  const stats = useMemo(() => {
-    const counts: Record<EventStatus, number> = {
-      UPCOMING: 0,
-      ONGOING: 0,
-      COMPLETED: 0,
-      CANCELLED: 0,
-    };
-    
-    let totalSpent = 0;
-
-    for (const event of events) {
-      const status = getEventLifecycleStatus(event);
-      counts[status] += 1;
-      
-      // Calculate total payments/spend
-      if (typeof event.amount !== 'undefined') {
-        totalSpent += Number(event.amount);
-      }
-    }
-
-    return { counts, totalSpent, totalRegistered: events.length };
-  }, [events]);
+  const filteredEvents =
+    filter === "ALL"
+      ? registeredEvents
+      : registeredEvents.filter((e) => e.status === filter);
 
   return (
-    <section className="w-full h-full pb-8">
+    <section className="w-full h-full pb-10">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight">My Events</h1>
-        <p className="text-muted-foreground mt-1">Manage and track all the events you have registered for.</p>
+        <h1 className="text-3xl font-bold tracking-tight">User Overview</h1>
+        <p className="text-sm text-muted-foreground mt-1">Your personal activity report and registered events.</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 w-full">
+      {/* --- STATISTICS CARDS --- */}
+      {loading ? (
+        <div className="text-muted-foreground animate-pulse mb-10 w-full h-24 bg-muted/20 border rounded-xl flex items-center justify-center">Loading your stats...</div>
+      ) : (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full mb-10">
         <EventStatCard
           category="Total Registered"
           count={stats.totalRegistered}
-          comparison="All your events"
+          comparison="All time event registrations"
           color="blue"
-          icon={<Ticket className="w-5 h-5" />}
+          icon={<TicketCheck />}
         />
         <EventStatCard
-          category="Upcoming"
-          count={stats.counts.UPCOMING}
-          comparison="Awaiting start"
-          color="yellow"
-          icon={<Calendar className="w-5 h-5" />}
-        />
-        <EventStatCard
-          category="Completed"
-          count={stats.counts.COMPLETED}
-          comparison="Past events"
+          category="Amount Spent"
+          count={stats.amountSpent}
+          comparison="Total invested in events"
           color="green"
-          icon={<Check className="w-5 h-5" />}
+          icon={<IndianRupee />}
         />
         <EventStatCard
-          category="Total Spent"
-          count={stats.totalSpent}
-          comparison="₹ total on registrations"
+          category="Events Attended"
+          count={stats.eventsAttended}
+          comparison="Successful attendances"
           color="yellow"
-          icon={<CreditCard className="w-5 h-5" />}
+          icon={<UserCheck />}
+        />
+        <EventStatCard
+          category="Upcoming Events"
+          count={stats.upcomingEvents}
+          comparison="Awaiting participation"
+          color="red"
+          icon={<Calendar />}
         />
       </div>
+      )}
 
-      <div className="flex space-x-2 rounded-lg bg-muted/50 p-1 mt-8 mb-6 max-w-fit">
-         {[ 
-            { id: "ALL", label: "All Events", icon: Ticket },
-            { id: "UPCOMING", label: "Upcoming", icon: Calendar }, 
-            { id: "ONGOING", label: "Ongoing", icon: Play }, 
-            { id: "COMPLETED", label: "Completed", icon: Check }
-         ].map((tab) => {
-           const Icon = tab.icon;
-           const isActive = activeTab === tab.id;
-           return (
-             <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                  isActive 
-                    ? "bg-background shadow text-foreground" 
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                }`}
-             >
-                <Icon className="w-4 h-4" />
-                {tab.label}
-             </button>
-           )
-         })}
+      {/* --- MY EVENTS LISTING --- */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4 border-b pb-4">
+        <div>
+          <h2 className="text-2xl font-semibold">My Events</h2>
+          <p className="text-sm text-muted-foreground">Manage the events you are participating in.</p>
+        </div>
+        
+        {/* Custom Pill Navigation for Filtering */}
+        <div className="flex gap-2 p-1 bg-muted/50 rounded-lg overflow-x-auto w-full md:w-auto">
+          {(["ALL", "UPCOMING", "ONGOING", "COMPLETED", "CANCELLED"] as (EventStatus | "ALL")[]).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setFilter(tab)}
+              className={`px-4 py-2 text-sm font-medium rounded-md whitespace-nowrap transition-colors ${
+                filter === tab 
+                  ? "bg-primary text-primary-foreground shadow-sm" 
+                  : "text-muted-foreground hover:bg-muted"
+              }`}
+            >
+              {tab === "ALL" ? "All Events" : tab.charAt(0) + tab.slice(1).toLowerCase()}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {loading ? (
-        <div className="flex flex-col items-center justify-center py-12">
-           <div className="w-8 h-8 rounded-full border-4 border-primary border-t-transparent animate-spin mb-4" />
-           <p className="text-muted-foreground">Loading your events...</p>
-        </div>
-      ) : null}
-      
-      {error ? (
-        <div className="p-4 rounded-md border border-destructive/50 bg-destructive/10 text-destructive text-sm flex items-center gap-2">
-            <span className="font-semibold">Error:</span> {error}
-        </div>
-      ) : null}
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {filteredEvents.length > 0 ? (
+          filteredEvents.map((event) => (
+            <article key={event.id} className="flex flex-col rounded-xl border border-border bg-card shadow-sm hover:shadow-md transition duration-200 overflow-hidden group">
+              {/* Image Section */}
+              <div className="relative h-44 w-full bg-muted overflow-hidden">
+                {event.imageUrl ? (
+                  <img
+                    src={event.imageUrl}
+                    alt={event.title}
+                    className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center bg-muted/30 text-xs font-medium text-muted-foreground">
+                    No Image Provided
+                  </div>
+                )}
+                {/* Embedded Status Badge */}
+                <div className="absolute top-3 right-3">
+                  <span
+                    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold shadow-sm backdrop-blur-md ${
+                      event.status === "COMPLETED"
+                        ? "bg-green-100/90 text-green-800 border-green-200"
+                        : event.status === "ONGOING"
+                          ? "bg-blue-100/90 text-blue-800 border-blue-200"
+                          : event.status === "CANCELLED"
+                            ? "bg-red-100/90 text-red-800 border-red-200"
+                            : "bg-yellow-100/90 text-yellow-800 border-yellow-200"
+                    } border`}
+                  >
+                    {event.status === "ONGOING" && <Play className="w-3 h-3 mr-1 fill-current" />}
+                    {event.status === "COMPLETED" && <Check className="w-3 h-3 mr-1" />}
+                    {event.status}
+                  </span>
+                </div>
+              </div>
 
-      {!loading && !error ? (
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
-          {filteredEvents.length > 0 ? (
-            filteredEvents.map((event) => {
-              const status = getEventLifecycleStatus(event);
-              
-              const statusColors = {
-                  UPCOMING: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-                  ONGOING: 'bg-blue-100 text-blue-800 border-blue-200',
-                  COMPLETED: 'bg-green-100 text-green-800 border-green-200',
-                  CANCELLED: 'bg-red-100 text-red-800 border-red-200',
-              };
+              {/* Content Section */}
+              <div className="p-5 flex flex-col flex-grow">
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <h3 className="line-clamp-1 text-lg font-semibold tracking-tight">{event.title}</h3>
+                </div>
 
-              return (
-                <article key={event.id} className="group flex flex-col rounded-xl border border-border bg-card overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 h-full">
-                  <div className="relative h-40 w-full overflow-hidden bg-muted">
-                    {event.imageUrl ? (
-                      <img
-                        src={event.imageUrl}
-                        alt={event.title}
-                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                      />
+                <p className="line-clamp-2 text-sm text-muted-foreground mb-4 flex-grow">
+                  {event.description || "No description provided."}
+                </p>
+
+                <div className="space-y-2 mb-6">
+                  <div className="flex items-center text-xs text-muted-foreground">
+                    <Calendar className="w-3.5 h-3.5 mr-2" />
+                    <span className="font-medium text-foreground">
+                      {new Date(event.startDatetime).toLocaleDateString(undefined, {
+                        month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit"
+                      })}
+                    </span>
+                  </div>
+                  <div className="flex items-center text-xs text-muted-foreground">
+                    <MapPin className="w-3.5 h-3.5 mr-2" />
+                    <span className="line-clamp-1">{event.location}</span>
+                  </div>
+                </div>
+
+                {/* Footer Action */}
+                <div className="mt-auto pt-4 border-t border-border flex items-center justify-between">
+                  <span className="text-sm font-semibold">
+                    {event.amount === 0 ? (
+                      <span className="text-green-600">FREE</span>
                     ) : (
-                      <div className="flex h-full w-full items-center justify-center bg-muted/60 text-muted-foreground">
-                        <ImageIcon className="w-10 h-10 opacity-20" />
-                      </div>
+                      <span className="text-foreground">₹{event.amount}</span>
                     )}
-                    <div className="absolute top-3 right-3">
-                       <span className={`px-2.5 py-1 rounded-full border text-xs font-bold shadow-sm backdrop-blur-md ${statusColors[status]}`}>
-                          {status}
-                       </span>
-                    </div>
-                  </div>
-
-                  <div className="p-5 flex flex-col flex-grow">
-                    <div className="mb-3 flex items-start justify-between gap-3">
-                      <h2 className="line-clamp-1 text-lg font-bold tracking-tight group-hover:text-primary transition-colors">{event.title}</h2>
-                    </div>
-
-                    <p className="mb-5 line-clamp-2 text-sm text-muted-foreground leading-relaxed flex-grow">
-                      {event.description || "No description provided."}
-                    </p>
-
-                    <div className="space-y-3 pt-4 border-t border-border/60">
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <Clock className="w-3.5 h-3.5" />
-                        <span>{new Date(event.startDatetime).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</span>
-                      </div>
-                      
-                      <div className="flex items-center justify-between pt-2">
-                        <div className="flex flex-col">
-                           <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Registration</span>
-                           <span className="text-sm font-bold text-foreground">
-                             {event.amount === 0 ? "FREE" : `₹${event.amount}`}
-                           </span>
-                        </div>
-                        <Button size="sm" asChild className="rounded-lg shadow-sm">
-                          <Link href={`/events/${event.id}`}>View Ticket</Link>
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </article>
-              );
-            })
-          ) : (
-             <div className="col-span-full py-20 flex flex-col items-center justify-center border border-dashed rounded-xl bg-muted/10">
-                 <Ticket className="w-12 h-12 text-muted-foreground/30 mb-4" />
-                 <h3 className="text-lg font-medium text-foreground">No events found</h3>
-                 <p className="text-sm text-muted-foreground mt-1 text-center max-w-sm">
-                    {activeTab === "ALL" 
-                      ? "You haven't registered for any events yet. Explore public events to get started!"
-                      : `You don't have any ${activeTab.toLowerCase()} events right now.`}
-                 </p>
-                 <Button variant="outline" className="mt-6" asChild>
-                    <Link href="/">Explore Events</Link>
-                 </Button>
-             </div>
-          )}
-        </div>
-      ) : null}
+                  </span>
+                  <Button size="sm" asChild variant="outline" className="rounded-full shadow-sm hover:bg-primary hover:text-primary-foreground">
+                    <Link href={`/events/${event.id}`}>View Details</Link>
+                  </Button>
+                </div>
+              </div>
+            </article>
+          ))
+        ) : (
+          <div className="col-span-full py-16 text-center border-2 border-dashed rounded-xl bg-muted/20">
+            <TicketCheck className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
+            <h3 className="text-lg font-semibold text-foreground">No events found</h3>
+            <p className="text-sm text-muted-foreground mt-1">You do not have any {filter !== "ALL" ? filter.toLowerCase() : ""} events matching this filter.</p>
+            {filter !== "ALL" && (
+              <Button variant="outline" className="mt-4" onClick={() => setFilter("ALL")}>
+                View All Events
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
     </section>
-  );
-}
-
-// Fallback icon component if image is missing
-function ImageIcon(props: React.ComponentProps<"svg">) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      {...props}
-    >
-      <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
-      <circle cx="9" cy="9" r="2" />
-      <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
-    </svg>
   );
 }

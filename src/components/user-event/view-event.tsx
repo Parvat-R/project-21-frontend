@@ -13,6 +13,8 @@ interface ViewEventProps {
 }
 
 export function ViewEvent({ event, isRegistered = false }: ViewEventProps) {
+  const isEventOver = new Date(event.endDatetime) < new Date();
+
   return (
     <div className="mx-auto max-w-4xl space-y-6 px-4 py-8">
 
@@ -27,9 +29,9 @@ export function ViewEvent({ event, isRegistered = false }: ViewEventProps) {
 
 
       <div className="flex justify-end gap-3">
-        {isRegistered && <FeedbackDialog />}
-        <Button disabled={isRegistered}>
-          {isRegistered ? "Registered" : "Register for Event"}
+        {isRegistered && isEventOver && <FeedbackDialog />}
+        <Button disabled={isRegistered || isEventOver}>
+          {isRegistered ? "Registered" : isEventOver ? "Event Ended" : "Register for Event"}
         </Button>
       </div>
     </div>
