@@ -56,7 +56,7 @@ export function EventDetails({ event }: EventDetailsProps) {
   return (
     <Card>
       <CardHeader className="pb-4">
-        {/* Event image */}
+
         <div className="relative mb-4 h-56 w-full overflow-hidden rounded-lg bg-muted">
           {event.imageUrl ? (
             <img
@@ -88,21 +88,21 @@ export function EventDetails({ event }: EventDetailsProps) {
       </CardHeader>
 
       <CardContent className="space-y-6">
-        {/* Description */}
+
         <p className="text-muted-foreground leading-relaxed">
           {event.description}
         </p>
 
         <Separator />
 
-        {/* Details grid */}
+
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <DetailItem
             icon={<Hash className="h-4 w-4" />}
             label="Event ID"
             value={event.id}
           />
-         
+
           <DetailItem
             icon={<LinkIcon className="h-4 w-4" />}
             label="Slug"

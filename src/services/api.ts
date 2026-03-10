@@ -41,6 +41,10 @@ export const feedbackEndpoints = {
 
 
 // Registration Endpoints
+export const registrationEndpoints = {
+  REGISTER_FOR_EVENT: (eventId: string) => `${BASE_URL}/api/register/event/${eventId}`,
+  GET_USER_REGISTRATIONS: (userId: string) => `${BASE_URL}/api/register/user/${userId}`,
+};
 
 
 // User Endpoints

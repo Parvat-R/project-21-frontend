@@ -1,4 +1,4 @@
-import { ViewEvent } from "@/components/organiser/view-event";
+import { ViewEvent } from "@/components/user-event/view-event";
 import { RoleSidebar } from "@/components/common/RoleSidebar";
 import { Event } from "@/lib/types";
 
@@ -34,7 +34,7 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
     <div className="flex min-h-screen bg-background">
       <RoleSidebar role="user" />
       <main className="flex-1 p-6">
-        <ViewEvent event={event} eventId={id} backHref="/user/events" />
+        <ViewEvent event={event} />
       </main>
     </div>
   );
