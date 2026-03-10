@@ -24,7 +24,7 @@ export default function UserPublicEventsPage() {
       try {
         const apiBase =
           process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ??
-          "http://localhost:3001";
+          "http://localhost:3000";
 
         const response = await fetch(
           `${apiBase}/api/event?visibility=PUBLIC&approvalStatus=APPROVED&take=50`,

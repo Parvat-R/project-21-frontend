@@ -2,8 +2,8 @@
 "use client";
 
 import { useState } from "react";
-import { EventCard } from "@/components/component/EventCard";
-import { EventFilterBanner } from "@/components/component/EventFilterBanner";
+import { EventCard } from "@/components/admin/EventCard";
+import { EventFilterBanner } from "@/components/admin/EventFilterBanner";
 import img from "@/assests/event.png";
 import { StaticImageData } from "next/dist/shared/lib/image-external";
 
@@ -71,7 +71,7 @@ export default function EventsPage() {
 
   return (
     <div className="w-full h-full flex flex-col items-center p-6">
-      <EventFilterBanner value={filter} onChange={setFilter} />
+      <EventFilterBanner value={filter} onChange={(val) => setFilter(val as EventStatus | "ALL")} />
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredEvents.map((event, idx) => (
           <EventCard key={idx} {...event} />
