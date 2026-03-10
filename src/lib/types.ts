@@ -1,3 +1,5 @@
+import { StaticImageData } from "next/image";
+
 export type ApprovalStatus = "PENDING" | "APPROVED" | "REJECTED";
 export type Visibility = "INTERNAL" | "PUBLIC";
 
@@ -11,7 +13,7 @@ export interface Event {
   createdOn: string;
   startDatetime: string;
   endDatetime: string;
-  imageUrl?: string;
+  image?: string | StaticImageData;
   seats: number;
   amount: number;
   visibility: Visibility;
