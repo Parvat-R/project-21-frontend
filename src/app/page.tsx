@@ -1,23 +1,14 @@
-import {
-  NavigationMenu,
-  NavigationMenuContent,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-  NavigationMenuTrigger,
-} from "@/components/ui/navigation-menu"
+import { Navbar } from "@/components/common/Navbar";
 
 export function Home() {
   return (
-    <NavigationMenu>
-    <NavigationMenuList>
-      <NavigationMenuItem>
-        <NavigationMenuTrigger>Item One</NavigationMenuTrigger>
-        <NavigationMenuContent>
-          <NavigationMenuLink>Link</NavigationMenuLink>
-        </NavigationMenuContent>
-      </NavigationMenuItem>
-    </NavigationMenuList>
-  </NavigationMenu>
-  )
+    <div className="flex flex-col min-h-screen">
+      <Navbar />
+      <main className="flex min-h-screen items-center justify-center bg-background">
+        <h1 className="text-4xl font-bold text-primary">
+          Welcome to Eventify!
+        </h1>
+      </main>
+    </div>
+  );
 }
