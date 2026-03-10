@@ -15,7 +15,6 @@ variables:
   containerRegistry: 'project21frontend.azurecr.io'
   dockerfilePath: '**/Dockerfile'
   tag: '91'
-  subscriptionId: $(subscriptionId)
 
   # Agent VM image name
   vmImageName: 'ubuntu-latest'
@@ -30,11 +29,10 @@ stages:
     pool:
       name: project-21-backend-pool
     steps:
-    - script: docker system prune -a -f
 
     - task: AzureKeyVault@2
       inputs:
-        azureSubscription: $(subscribtionId)
+        azureSubscription: $(subscriptionId)
         KeyVaultName: 'project-21-key-vault'
         SecretsFilter: '*'
 
