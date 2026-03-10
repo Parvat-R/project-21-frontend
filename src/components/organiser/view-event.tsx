@@ -14,6 +14,8 @@ interface ViewEventProps {
   eventId?: string;
   registeredUsers?: RegisteredUser[];
   backHref?: string;
+  editHref?: string;
+  showRegister?: boolean;
 }
 
 type RegistrationApiResponse = {
@@ -25,11 +27,17 @@ type RegistrationApiResponse = {
   attendance?: boolean;
 };
 
-export function ViewEvent({ event, eventId, registeredUsers = [], backHref = "/" }: ViewEventProps) {
+// Temporary until real auth session is available
+const TEMP_CURRENT_USER_ID = "cmm7d6ttv0007uoeihdxt0g26";
+
+export function ViewEvent({ event, eventId, registeredUsers = [], backHref = "/", editHref, showRegister = false }: ViewEventProps) {
   const [activeTab, setActiveTab] = useState("details");
   const [users, setUsers] = useState<RegisteredUser[]>(registeredUsers);
   const [isUsersLoading, setIsUsersLoading] = useState(false);
   const [usersLoaded, setUsersLoaded] = useState(registeredUsers.length > 0);
+  const [registering, setRegistering] = useState(false);
+  const [registerMsg, setRegisterMsg] = useState("");
+  const [registerError, setRegisterError] = useState("");
 
   useEffect(() => {
     if (activeTab !== "users" || usersLoaded || !eventId) return;
@@ -68,13 +76,63 @@ export function ViewEvent({ event, eventId, registeredUsers = [], backHref = "/"
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 px-4 py-8">
-      {/* Back button */}
-      <Link href={backHref}>
-        <Button variant="ghost" size="sm" className="gap-1">
-          <ArrowLeft className="h-4 w-4" />
-          Back
-        </Button>
-      </Link>
+      {/* Back + Action row */}
+      <div className="flex items-center justify-between">
+        <Link href={backHref}>
+          <Button variant="ghost" size="sm" className="gap-1">
+            <ArrowLeft className="h-4 w-4" />
+            Back
+          </Button>
+        </Link>
+
+        <div className="flex items-center gap-2">
+          {editHref && (
+            <Link href={editHref}>
+              <Button size="sm">Edit Event</Button>
+            </Link>
+          )}
+
+          {showRegister && (
+            <Button
+              size="sm"
+              disabled={registering || !!registerMsg}
+              onClick={async () => {
+                if (!eventId) return;
+                setRegistering(true);
+                setRegisterError("");
+                try {
+                  const apiBase =
+                    process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ??
+                    "http://localhost:3000";
+                  const res = await fetch(`${apiBase}/api/register`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      userId: TEMP_CURRENT_USER_ID,
+                      eventId,
+                    }),
+                  });
+                  if (res.ok) {
+                    setRegisterMsg("Registered successfully!");
+                  } else {
+                    const data = await res.json();
+                    setRegisterError(data?.error ?? "Registration failed.");
+                  }
+                } catch {
+                  setRegisterError("Unable to reach server.");
+                } finally {
+                  setRegistering(false);
+                }
+              }}
+            >
+              {registering ? "Registering..." : registerMsg ? "Registered ✓" : "Register"}
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {registerError && <p className="text-sm text-destructive">{registerError}</p>}
+      {registerMsg && !registerError && <p className="text-sm text-green-600">{registerMsg}</p>}
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>

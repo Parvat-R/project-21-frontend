@@ -2,10 +2,19 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarPlus2, LayoutDashboard, Landmark, ListFilter, Globe2 } from "lucide-react";
+import {
+  CalendarPlus2,
+  LayoutDashboard,
+  Landmark,
+  ListFilter,
+  Globe2,
+  ShieldCheck,
+  Users,
+  CalendarDays,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type Role = "organiser" | "user";
+type Role = "organiser" | "user" | "admin";
 
 type NavItem = {
   label: string;
@@ -14,6 +23,11 @@ type NavItem = {
 };
 
 const roleNavItems: Record<Role, NavItem[]> = {
+  admin: [
+    { label: "Dashboard", href: "/admin/dashboard", icon: ShieldCheck },
+    { label: "All Events", href: "/admin/events", icon: CalendarDays },
+    { label: "Users", href: "/admin/users", icon: Users },
+  ],
   organiser: [
     { label: "Create Event", href: "/organiser/events/create", icon: CalendarPlus2 },
     { label: "Dashboard", href: "/organiser/dashboard", icon: LayoutDashboard },

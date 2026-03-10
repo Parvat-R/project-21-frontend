@@ -40,7 +40,7 @@ const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
 const STEPS = ["basics", "details", "review"] as const;
 type Step = (typeof STEPS)[number];
 
-const TEMP_CREATOR_ID = "cmm7d6ttv0007uoeihdxt0g26";
+const STORAGE_KEY = "organiser_user_id";
 
 export function EventForm() {
   const [title, setTitle] = useState("");
@@ -59,6 +59,12 @@ export function EventForm() {
   const [imagePreview, setImagePreview] = useState("");
   const [imageName, setImageName] = useState("");
   const [activeStep, setActiveStep] = useState<Step>("basics");
+
+  // Read creator ID from localStorage (set on dashboard)
+  const creatorId =
+    typeof window !== "undefined"
+      ? localStorage.getItem(STORAGE_KEY) ?? ""
+      : "";
 
   const canSubmit = useMemo(() => {
     return (
@@ -120,7 +126,9 @@ export function EventForm() {
   };
 
   const uploadImageAndGetUrl = async (file: File) => {
-    const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ?? "http://localhost:3000";
+    const apiBase =
+      process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ??
+      "http://localhost:3000";
     const formData = new FormData();
     formData.append("file", file);
 
@@ -174,17 +182,26 @@ export function EventForm() {
       return;
     }
 
+    if (!creatorId) {
+      setErrorMessage(
+        "No creator ID found. Please go to your dashboard first and enter your User ID."
+      );
+      return;
+    }
+
     setSubmitting(true);
 
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ?? "http://localhost:3000";
-      const uploadedImageUrl = imageFile ? await uploadImageAndGetUrl(imageFile) : undefined;
+      const apiBase =
+        process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ??
+        "http://localhost:3000";
+      const uploadedImageUrl = imageFile
+        ? await uploadImageAndGetUrl(imageFile)
+        : undefined;
 
       const response = await fetch(`${apiBase}/api/event`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: title.trim(),
           description: description.trim(),
@@ -194,7 +211,7 @@ export function EventForm() {
           seats: parsedSeats,
           amount: parsedAmount,
           visibility,
-          creatorId: TEMP_CREATOR_ID,
+          creatorId,
           imageUrl: uploadedImageUrl,
         }),
       });
@@ -206,7 +223,9 @@ export function EventForm() {
         return;
       }
 
-      setSuccessMessage(`Event created successfully${result?.id ? ` (ID: ${result.id})` : ""}.`);
+      setSuccessMessage(
+        `Event created successfully${result?.id ? ` (ID: ${result.id})` : ""}.`
+      );
       setTitle("");
       setDescription("");
       setSlug("");
@@ -257,7 +276,6 @@ export function EventForm() {
     const parsedSeats = Number(seats);
     const parsedAmount = Number(amount);
 
-
     if (Number.isNaN(parsedSeats) || parsedSeats <= 0 || !Number.isInteger(parsedSeats)) {
       setErrorMessage("Seats must be a positive whole number.");
       return false;
@@ -274,10 +292,8 @@ export function EventForm() {
   const goNext = () => {
     setErrorMessage("");
     const currentIndex = STEPS.indexOf(activeStep);
-
     if (activeStep === "basics" && !validateStepOne()) return;
     if (activeStep === "details" && !validateStepTwo()) return;
-
     const nextStep = STEPS[Math.min(currentIndex + 1, STEPS.length - 1)];
     setActiveStep(nextStep);
   };
@@ -294,7 +310,16 @@ export function EventForm() {
       <CardHeader>
         <CardTitle>Create New Event</CardTitle>
         <CardDescription>
-          This form maps to backend `POST /api/event` and requires a valid organiser `creatorId`.
+          This form maps to backend <code>POST /api/event</code>.
+          {creatorId ? (
+            <span className="ml-1 text-green-600">
+              Creating as user <span className="font-mono">{creatorId}</span>.
+            </span>
+          ) : (
+            <span className="ml-1 text-yellow-600">
+              ⚠️ No User ID found — go to your dashboard and enter your User ID first.
+            </span>
+          )}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -436,9 +461,11 @@ export function EventForm() {
                         onChange={handleImageChange}
                       />
                       <FieldDescription>
-                        Optional. File will be stored in backend `public/images`.
+                        Optional. File will be stored in backend <code>public/images</code>.
                       </FieldDescription>
-                      {imageName ? <p className="text-xs text-muted-foreground">Selected: {imageName}</p> : null}
+                      {imageName ? (
+                        <p className="text-xs text-muted-foreground">Selected: {imageName}</p>
+                      ) : null}
                     </Field>
                   </FieldGroup>
                 </CardContent>
@@ -448,7 +475,7 @@ export function EventForm() {
             <TabsContent value="review">
               <Card className="border border-border shadow-none">
                 <CardHeader>
-                  <CardTitle className="text-lg">Section 3: Review & Submit</CardTitle>
+                  <CardTitle className="text-lg">Section 3: Review &amp; Submit</CardTitle>
                   <CardDescription>Review the final payload before creating the event.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -460,7 +487,7 @@ export function EventForm() {
                     <p><span className="font-medium">Seats:</span> {seats || "-"}</p>
                     <p><span className="font-medium">Amount:</span> {amount || "-"}</p>
                     <p><span className="font-medium">Visibility:</span> {visibility}</p>
-                    <p><span className="font-medium">creatorId:</span> {TEMP_CREATOR_ID}</p>
+                    <p><span className="font-medium">creatorId:</span> {creatorId || "⚠️ Not set"}</p>
                   </div>
 
                   <div>
@@ -495,12 +522,7 @@ export function EventForm() {
 
           <div className="flex items-center justify-between">
             {activeStep !== "basics" ? (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={goBack}
-                disabled={submitting}
-              >
+              <Button type="button" variant="outline" onClick={goBack} disabled={submitting}>
                 Back
               </Button>
             ) : (
@@ -508,18 +530,16 @@ export function EventForm() {
             )}
 
             {activeStep !== "review" ? (
-              <Button
-                type="button"
-                onClick={goNext}
-                disabled={submitting}
-              >
+              <Button type="button" onClick={goNext} disabled={submitting}>
                 Next
               </Button>
             ) : null}
           </div>
 
           {errorMessage ? <FieldError>{errorMessage}</FieldError> : null}
-          {successMessage ? <p className="text-sm text-green-700">{successMessage}</p> : null}
+          {successMessage ? (
+            <p className="text-sm text-green-700">{successMessage}</p>
+          ) : null}
         </form>
       </CardContent>
     </Card>
