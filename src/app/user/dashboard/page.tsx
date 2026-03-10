@@ -5,6 +5,7 @@ import { Calendar, Play, Check, IndianRupee, MapPin, UserCheck, TicketCheck } fr
 import { EventStatCard } from "@/components/admin/EventStatCard";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { getUser, getToken } from "@/lib/auth";
 
 type EventStatus = "UPCOMING" | "ONGOING" | "COMPLETED" | "CANCELLED";
 
@@ -20,7 +21,7 @@ type EventItem = {
   imageUrl?: string;
 };
 
-import jwt from "jsonwebtoken";
+// ------------------------------------
 
 // ------------------------------------
 
@@ -38,75 +39,67 @@ export default function UserDashboardPage() {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const token = localStorage.getItem("token");
-        if (!token) {
+        const user = getUser();
+        const token = getToken();
+        if (!user || !token) {
           setLoading(false);
           return;
         }
 
-        // Warning: jsonwebtoken verify doesn't work in browser purely, usually just decode is better.
-        // We will just decode it normally.
-        const payloadBase64 = token.split('.')[1];
-        if (!payloadBase64) return;
-        const decodedString = atob(payloadBase64);
-        const userPayload = JSON.parse(decodedString);
-        const userId = userPayload.userId || userPayload.id; // Adjust based on token structure
-
-        if (!userId) {
-            setLoading(false);
-            return;
-        }
-
+        const userId = user.userId;
         const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ?? "http://localhost:3000";
 
         // Fetch Stats
-        const statsRes = await fetch(`${apiBase}/api/user/dashboard-stats?userId=${userId}`);
+        const statsRes = await fetch(`${apiBase}/api/user/dashboard-stats?userId=${userId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
         if (statsRes.ok) {
-           const statsData = await statsRes.json();
-           setStats({
-               totalRegistered: statsData.totalRegistered || 0,
-               amountSpent: statsData.amountSpent || 0,
-               eventsAttended: statsData.attendedCount || 0,
-               upcomingEvents: (statsData.totalRegistered || 0) - (statsData.missedCount || 0) - (statsData.attendedCount || 0),
-           });
+          const statsData = await statsRes.json();
+          setStats({
+            totalRegistered: statsData.totalRegistered || 0,
+            amountSpent: statsData.amountSpent || 0,
+            eventsAttended: statsData.attendedCount || 0,
+            upcomingEvents: (statsData.totalRegistered || 0) - (statsData.missedCount || 0) - (statsData.attendedCount || 0),
+          });
         }
 
         // Fetch Registered Events
-        const eventsRes = await fetch(`${apiBase}/api/register/user/${userId}`);
+        const eventsRes = await fetch(`${apiBase}/api/register/user/${userId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
         if (eventsRes.ok) {
-           const registrations = await eventsRes.json();
-           
-           // Format events to match the EventItem type
-           const now = new Date();
-           const formattedEvents = Array.isArray(registrations) ? registrations.map((reg: any) => {
-               const ev = reg.event;
-               const start = new Date(ev.startDatetime);
-               const end = new Date(ev.endDatetime);
-               
-               let status: EventStatus = "UPCOMING";
-               if (now < start) status = "UPCOMING";
-               else if (now >= start && now <= end) status = "ONGOING";
-               else status = "COMPLETED";
+          const registrations = await eventsRes.json();
 
-               return {
-                   id: ev.id,
-                   title: ev.title,
-                   description: ev.description,
-                   startDatetime: ev.startDatetime,
-                   endDatetime: ev.endDatetime,
-                   amount: ev.amount,
-                   location: ev.location || "Online",
-                   status: status,
-                   imageUrl: ev.imageUrl
-               };
-           }) : [];
+          const now = new Date();
+          const formattedEvents: EventItem[] = (Array.isArray(registrations) ? registrations : []).map((reg: any) => {
+            const ev = reg.event;
+            const start = new Date(ev.startDatetime);
+            const end = new Date(ev.endDatetime);
 
-           setRegisteredEvents(formattedEvents);
+            let status: EventStatus = "UPCOMING";
+            if (now < start) status = "UPCOMING";
+            else if (now >= start && now <= end) status = "ONGOING";
+            else status = "COMPLETED";
+
+            return {
+              id: ev.id,
+              title: ev.title,
+              description: ev.description,
+              startDatetime: ev.startDatetime,
+              endDatetime: ev.endDatetime,
+              amount: Number(ev.amount),
+              location: ev.location || "Online",
+              status: status,
+              imageUrl: ev.imageUrl
+            };
+          });
+
+          setRegisteredEvents(formattedEvents);
         }
       } catch (err) {
-         console.error("Dashboard fetch error:", err);
+        console.error("Dashboard fetch error:", err);
       } finally {
-         setLoading(false);
+        setLoading(false);
       }
     };
 
@@ -129,36 +122,36 @@ export default function UserDashboardPage() {
       {loading ? (
         <div className="text-muted-foreground animate-pulse mb-10 w-full h-24 bg-muted/20 border rounded-xl flex items-center justify-center">Loading your stats...</div>
       ) : (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full mb-10">
-        <EventStatCard
-          category="Total Registered"
-          count={stats.totalRegistered}
-          comparison="All time event registrations"
-          color="blue"
-          icon={<TicketCheck />}
-        />
-        <EventStatCard
-          category="Amount Spent"
-          count={stats.amountSpent}
-          comparison="Total invested in events"
-          color="green"
-          icon={<IndianRupee />}
-        />
-        <EventStatCard
-          category="Events Attended"
-          count={stats.eventsAttended}
-          comparison="Successful attendances"
-          color="yellow"
-          icon={<UserCheck />}
-        />
-        <EventStatCard
-          category="Upcoming Events"
-          count={stats.upcomingEvents}
-          comparison="Awaiting participation"
-          color="red"
-          icon={<Calendar />}
-        />
-      </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full mb-10">
+          <EventStatCard
+            category="Total Registered"
+            count={stats.totalRegistered}
+            comparison="All time event registrations"
+            color="blue"
+            icon={<TicketCheck />}
+          />
+          <EventStatCard
+            category="Amount Spent"
+            count={stats.amountSpent}
+            comparison="Total invested in events"
+            color="green"
+            icon={<IndianRupee />}
+          />
+          <EventStatCard
+            category="Events Attended"
+            count={stats.eventsAttended}
+            comparison="Successful attendances"
+            color="yellow"
+            icon={<UserCheck />}
+          />
+          <EventStatCard
+            category="Upcoming Events"
+            count={stats.upcomingEvents}
+            comparison="Awaiting participation"
+            color="red"
+            icon={<Calendar />}
+          />
+        </div>
       )}
 
       {/* --- MY EVENTS LISTING --- */}
@@ -167,18 +160,17 @@ export default function UserDashboardPage() {
           <h2 className="text-2xl font-semibold">My Events</h2>
           <p className="text-sm text-muted-foreground">Manage the events you are participating in.</p>
         </div>
-        
+
         {/* Custom Pill Navigation for Filtering */}
         <div className="flex gap-2 p-1 bg-muted/50 rounded-lg overflow-x-auto w-full md:w-auto">
           {(["ALL", "UPCOMING", "ONGOING", "COMPLETED", "CANCELLED"] as (EventStatus | "ALL")[]).map((tab) => (
             <button
               key={tab}
               onClick={() => setFilter(tab)}
-              className={`px-4 py-2 text-sm font-medium rounded-md whitespace-nowrap transition-colors ${
-                filter === tab 
-                  ? "bg-primary text-primary-foreground shadow-sm" 
+              className={`px-4 py-2 text-sm font-medium rounded-md whitespace-nowrap transition-colors ${filter === tab
+                  ? "bg-primary text-primary-foreground shadow-sm"
                   : "text-muted-foreground hover:bg-muted"
-              }`}
+                }`}
             >
               {tab === "ALL" ? "All Events" : tab.charAt(0) + tab.slice(1).toLowerCase()}
             </button>
@@ -188,8 +180,8 @@ export default function UserDashboardPage() {
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {filteredEvents.length > 0 ? (
-          filteredEvents.map((event) => (
-            <article key={event.id} className="flex flex-col rounded-xl border border-border bg-card shadow-sm hover:shadow-md transition duration-200 overflow-hidden group">
+          filteredEvents.map((event, idx) => (
+            <article key={idx} className="flex flex-col rounded-xl border border-border bg-card shadow-sm hover:shadow-md transition duration-200 overflow-hidden group">
               {/* Image Section */}
               <div className="relative h-44 w-full bg-muted overflow-hidden">
                 {event.imageUrl ? (
@@ -206,15 +198,14 @@ export default function UserDashboardPage() {
                 {/* Embedded Status Badge */}
                 <div className="absolute top-3 right-3">
                   <span
-                    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold shadow-sm backdrop-blur-md ${
-                      event.status === "COMPLETED"
+                    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold shadow-sm backdrop-blur-md ${event.status === "COMPLETED"
                         ? "bg-green-100/90 text-green-800 border-green-200"
                         : event.status === "ONGOING"
                           ? "bg-blue-100/90 text-blue-800 border-blue-200"
                           : event.status === "CANCELLED"
                             ? "bg-red-100/90 text-red-800 border-red-200"
                             : "bg-yellow-100/90 text-yellow-800 border-yellow-200"
-                    } border`}
+                      } border`}
                   >
                     {event.status === "ONGOING" && <Play className="w-3 h-3 mr-1 fill-current" />}
                     {event.status === "COMPLETED" && <Check className="w-3 h-3 mr-1" />}

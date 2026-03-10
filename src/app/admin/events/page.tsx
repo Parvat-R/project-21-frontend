@@ -81,21 +81,12 @@ export default function AdminEventsPage() {
   };
 
   return (
-<<<<<<< HEAD
-    <div className="w-full h-full flex flex-col items-center p-6">
-      <EventFilterBanner value={filter} onChange={(val) => setFilter(val as EventStatus | "ALL")} />
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredEvents.map((event, idx) => (
-          <EventCard key={idx} {...event} />
-        ))}
-=======
     <section className="w-full h-full">
       <div className="mb-4">
         <h1 className="text-2xl font-semibold">All Events</h1>
         <p className="text-sm text-muted-foreground">
           Browse, filter, and manage all submitted events.
         </p>
->>>>>>> 7a1b0e58bf8f3b1305bf44f24d5e57197b016f33
       </div>
 
       <EventFilterBanner value={filter} onChange={setFilter} />
