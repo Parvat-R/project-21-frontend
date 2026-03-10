@@ -48,7 +48,7 @@ stages:
         repository: $(imageRepository)
         dockerfile: $(dockerfilePath)
         containerRegistry: $(dockerRegistryServiceConnection)
-        arguments: --build-arg NEXT_PUBLIC_JWT_SECRET=$(NEXT_PUBLIC_JWT_SECRET) --build-arg NEXT_PUBLIC_BACKEND_URL=$(NEXT_PUBLIC_BACKEND_URL)
+        arguments: -p 80:3000 --build-arg NEXT_PUBLIC_JWT_SECRET=$(NEXT_PUBLIC_JWT_SECRET) --build-arg NEXT_PUBLIC_BACKEND_URL=$(NEXT_PUBLIC_BACKEND_URL)
         tags: |
           $(tag)
 
@@ -61,8 +61,8 @@ stages:
         tags: |
           $(tag)
 
-    # - task: AzureWebAppContainer@1
-    #   inputs:
-    #     azureSubscription: 'Azure subscription 1(0839a5ee-329a-4b35-82c1-7c70e55542eb)'
-    #     appName: 'project-21-frontend'
-    #     containers: 'project21frontend.azurecr.io/project21frontend:43'
+    - task: AzureWebAppContainer@1
+      inputs:
+        azureSubscription: 'Azure subscription 1(0839a5ee-329a-4b35-82c1-7c70e55542eb)'
+        appName: 'project-21-frontend'
+        containers: 'project21frontend.azurecr.io/project21frontend:$(tag)'
