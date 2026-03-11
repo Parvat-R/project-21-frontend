@@ -41,7 +41,7 @@ export default function OrganiserRegisteredEventsPage() {
     const run = async () => {
       try {
         const apiBase =
-          process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ??
+          process.env.NEXT_PUBLIC_BACKEND_URL?.replace(/\/$/, "") ??
           "http://localhost:3000";
         const response = await fetch(`${apiBase}/api/register/user/${user.userId}`, {
           cache: "no-store",

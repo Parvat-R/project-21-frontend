@@ -47,7 +47,7 @@ export default function UserDashboardPage() {
         }
 
         const userId = user.userId;
-        const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ?? "http://localhost:3000";
+        const apiBase = process.env.NEXT_PUBLIC_BACKEND_URL?.replace(/\/$/, "") ?? "http://localhost:3000";
 
         // Fetch Registered Events
         const eventsRes = await fetch(`${apiBase}/api/register/user/${userId}`, {

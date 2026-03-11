@@ -127,7 +127,7 @@ export function EventForm() {
 
   const uploadImageAndGetUrl = async (file: File) => {
     const apiBase =
-      process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ??
+      process.env.NEXT_PUBLIC_BACKEND_URL?.replace(/\/$/, "") ??
       "http://localhost:3000";
     const formData = new FormData();
     formData.append("file", file);
@@ -193,7 +193,7 @@ export function EventForm() {
 
     try {
       const apiBase =
-        process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ??
+        process.env.NEXT_PUBLIC_BACKEND_URL?.replace(/\/$/, "") ??
         "http://localhost:3000";
       const uploadedImageUrl = imageFile
         ? await uploadImageAndGetUrl(imageFile)

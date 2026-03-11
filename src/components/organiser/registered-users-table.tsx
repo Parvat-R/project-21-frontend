@@ -41,7 +41,7 @@ export function RegisteredUsersTable({ users: initialUsers }: RegisteredUsersTab
       setError("");
       setUpdatingIds((prev) => ({ ...prev, [registrationId]: true }));
 
-      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ?? "http://localhost:3000";
+      const apiBase = process.env.NEXT_PUBLIC_BACKEND_URL?.replace(/\/$/, "") ?? "http://localhost:3000";
       const response = await fetch(`${apiBase}/api/register/${registrationId}/attendance`, {
         method: "PUT",
         headers: {

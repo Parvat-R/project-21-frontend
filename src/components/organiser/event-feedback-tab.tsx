@@ -29,7 +29,7 @@ export function EventFeedbackTab({ eventId }: { eventId: string }) {
     const fetchFeedback = async () => {
       try {
         const apiBase =
-          process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ??
+          process.env.NEXT_PUBLIC_BACKEND_URL?.replace(/\/$/, "") ??
           "http://localhost:3000";
         const res = await fetch(`${apiBase}/api/feedback/event/${eventId}`, {
           cache: "no-store",

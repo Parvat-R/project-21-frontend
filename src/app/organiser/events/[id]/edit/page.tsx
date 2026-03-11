@@ -80,7 +80,7 @@ export default function EditOrganiserEventPage() {
     const run = async () => {
       try {
         setLoading(true);
-        const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ?? "http://localhost:3000";
+        const apiBase = process.env.NEXT_PUBLIC_BACKEND_URL?.replace(/\/$/, "") ?? "http://localhost:3000";
         const response = await fetch(`${apiBase}/api/event/${id}`, { cache: "no-store" });
         const event: EventApiResponse = await response.json();
 
@@ -146,7 +146,7 @@ export default function EditOrganiserEventPage() {
   };
 
   const uploadImageAndGetUrl = async (file: File) => {
-    const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ?? "http://localhost:3000";
+    const apiBase = process.env.NEXT_PUBLIC_BACKEND_URL?.replace(/\/$/, "") ?? "http://localhost:3000";
     const formData = new FormData();
     formData.append("file", file);
 
@@ -193,7 +193,7 @@ export default function EditOrganiserEventPage() {
     setSubmitting(true);
 
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ?? "http://localhost:3000";
+      const apiBase = process.env.NEXT_PUBLIC_BACKEND_URL?.replace(/\/$/, "") ?? "http://localhost:3000";
       const nextImageUrl = imageFile ? await uploadImageAndGetUrl(imageFile) : imageUrl;
 
       const response = await fetch(`${apiBase}/api/event/${id}`, {

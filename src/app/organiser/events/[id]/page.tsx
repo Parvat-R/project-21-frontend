@@ -12,7 +12,7 @@ export default async function OrganiserEventPage({
 }) {
   const { id } = await params;
   const apiBase =
-    process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ??
+    process.env.NEXT_PUBLIC_BACKEND_URL?.replace(/\/$/, "") ??
     "http://localhost:3000";
 
   const eventRes = await fetch(`${apiBase}/api/event/${id}`, {

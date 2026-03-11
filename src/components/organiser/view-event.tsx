@@ -52,7 +52,7 @@ export function ViewEvent({ event, eventId, registeredUsers = [], backHref = "/"
     const loadUsers = async () => {
       try {
         setIsUsersLoading(true);
-        const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ?? "http://localhost:3000";
+        const apiBase = process.env.NEXT_PUBLIC_BACKEND_URL?.replace(/\/$/, "") ?? "http://localhost:3000";
         const response = await fetch(`${apiBase}/api/register/event/${eventId}`, { cache: "no-store" });
 
         if (!response.ok) {
@@ -90,7 +90,7 @@ export function ViewEvent({ event, eventId, registeredUsers = [], backHref = "/"
     const checkRegistration = async () => {
       setIsCheckingReg(true);
       try {
-        const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ?? "http://localhost:3000";
+        const apiBase = process.env.NEXT_PUBLIC_BACKEND_URL?.replace(/\/$/, "") ?? "http://localhost:3000";
         const res = await fetch(`${apiBase}/api/register/user/${currentUser.userId}`);
         if (res.ok) {
           const list = await res.json();
@@ -135,7 +135,7 @@ export function ViewEvent({ event, eventId, registeredUsers = [], backHref = "/"
                 setRegisterError("");
                 try {
                   const apiBase =
-                    process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ??
+                    process.env.NEXT_PUBLIC_BACKEND_URL?.replace(/\/$/, "") ??
                     "http://localhost:3000";
                   const res = await fetch(`${apiBase}/api/register`, {
                     method: "POST",
