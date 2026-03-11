@@ -308,14 +308,13 @@ export function EventForm() {
       <CardHeader>
         <CardTitle>Create New Event</CardTitle>
         <CardDescription>
-          This form maps to backend <code>POST /api/event</code>.
           {creatorId ? (
             <span className="ml-1 text-green-600">
               Creating as user <span className="font-mono">{creatorId}</span>.
             </span>
           ) : (
             <span className="ml-1 text-yellow-600">
-              ⚠️ No User ID found — go to your dashboard and enter your User ID first.
+              No User ID found — go to your dashboard and enter your User ID first.
             </span>
           )}
         </CardDescription>
